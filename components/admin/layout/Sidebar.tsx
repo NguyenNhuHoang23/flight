@@ -22,7 +22,9 @@ const navItems = [
   { name: "Tổng quát", href: "/admin", icon: LayoutDashboard },
   { name: "Đơn hàng", href: "/admin/orders", icon: ShoppingBag },
   { name: "Khách hàng", href: "/admin/customers", icon: Users },
-  { name: "Cài đặt", href: "/admin/settings", icon: Settings },
+  { name: "Hoàn tiền", href: "/admin/refunds", icon: BarChart3 },
+  { name: "Ngân hàng", href: "/admin/bank", icon: Settings },
+  { name: "Hóa đơn", href: "/admin/invoices", icon: BarChart3 },
 ];
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {

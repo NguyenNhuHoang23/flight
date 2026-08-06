@@ -1,9 +1,9 @@
-export type FlightType = 'one_way' | 'round_trip' | 'multi_city';
-export type OrderStatus = 'pending' | 'confirmed' | 'cancelled';
+export type FlightType = "one_way" | "round_trip" | "multi_city";
+export type OrderStatus = "pending" | "confirmed" | "cancelled";
 
 export interface Passenger {
   name: string;
-  type: 'Người lớn' | 'Trẻ em' | 'Em bé';
+  type: "Người lớn" | "Trẻ em" | "Em bé";
   passportOrCccd: string;
 }
 
@@ -24,10 +24,10 @@ export interface Order {
   customerPhone: string;
   customerEmail: string;
   passengers: Passenger[];
+  paymentProofUrl?: string;
   flightType: FlightType;
   flights: FlightSegment[];
   totalAmount: number;
-  paymentMethod: string;
   status: OrderStatus;
   createdAt: string;
 }
@@ -38,9 +38,14 @@ export const MOCK_ORDERS: Order[] = [
     customerName: "Nguyễn Văn An",
     customerPhone: "0912345678",
     customerEmail: "an.nguyen@gmail.com",
+    paymentProofUrl: "/images/may-bay-vector-png-09.png",
     passengers: [
-      { name: "NGUYEN VAN AN", type: "Người lớn", passportOrCccd: "001092001234" },
-      { name: "LE THI HOA", type: "Người lớn", passportOrCccd: "001195005678" }
+      {
+        name: "NGUYEN VAN AN",
+        type: "Người lớn",
+        passportOrCccd: "001092001234",
+      },
+      { name: "LE THI HOA", type: "Người lớn", passportOrCccd: "001195005678" },
     ],
     flightType: "round_trip",
     flights: [
@@ -52,7 +57,7 @@ export const MOCK_ORDERS: Order[] = [
         arrival: "SGN (TP.HCM)",
         departTime: "08:00 - 06/08/2026",
         arrivalTime: "10:10 - 06/08/2026",
-        seatClass: "Phổ thông linh hoạt"
+        seatClass: "Phổ thông linh hoạt",
       },
       {
         airline: "Vietjet Air",
@@ -62,13 +67,12 @@ export const MOCK_ORDERS: Order[] = [
         arrival: "HAN (Hà Nội)",
         departTime: "19:30 - 10/08/2026",
         arrivalTime: "21:40 - 10/08/2026",
-        seatClass: "Eco"
-      }
+        seatClass: "Eco",
+      },
     ],
     totalAmount: 4850000,
-    paymentMethod: "Chuyển khoản QR",
     status: "pending",
-    createdAt: "06/08/2026 14:30"
+    createdAt: "06/08/2026 14:30",
   },
   {
     id: "ORD-2026-002",
@@ -76,7 +80,7 @@ export const MOCK_ORDERS: Order[] = [
     customerPhone: "0987654321",
     customerEmail: "tuan.pham@hotmail.com",
     passengers: [
-      { name: "PHAM MINH TUAN", type: "Người lớn", passportOrCccd: "C8392019" }
+      { name: "PHAM MINH TUAN", type: "Người lớn", passportOrCccd: "C8392019" },
     ],
     flightType: "one_way",
     flights: [
@@ -88,13 +92,12 @@ export const MOCK_ORDERS: Order[] = [
         arrival: "DAD (Đà Nẵng)",
         departTime: "11:15 - 08/08/2026",
         arrivalTime: "12:35 - 08/08/2026",
-        seatClass: "Thương gia (Business)"
-      }
+        seatClass: "Thương gia (Business)",
+      },
     ],
     totalAmount: 3200000,
-    paymentMethod: "Thẻ Visa/Mastercard",
     status: "confirmed",
-    createdAt: "06/08/2026 10:15"
+    createdAt: "06/08/2026 10:15",
   },
   {
     id: "ORD-2026-003",
@@ -102,8 +105,16 @@ export const MOCK_ORDERS: Order[] = [
     customerPhone: "0905112233",
     customerEmail: "thao.hoang@yahoo.com",
     passengers: [
-      { name: "HOANG THU THAO", type: "Người lớn", passportOrCccd: "036198000111" },
-      { name: "NGUYEN HOANG NAM", type: "Trẻ em", passportOrCccd: "Khai sinh 9928" }
+      {
+        name: "HOANG THU THAO",
+        type: "Người lớn",
+        passportOrCccd: "036198000111",
+      },
+      {
+        name: "NGUYEN HOANG NAM",
+        type: "Trẻ em",
+        passportOrCccd: "Khai sinh 9928",
+      },
     ],
     flightType: "round_trip",
     flights: [
@@ -115,7 +126,7 @@ export const MOCK_ORDERS: Order[] = [
         arrival: "PQC (Phú Quốc)",
         departTime: "06:20 - 12/08/2026",
         arrivalTime: "08:30 - 12/08/2026",
-        seatClass: "Phổ thông"
+        seatClass: "Phổ thông",
       },
       {
         airline: "Vietravel Airlines",
@@ -125,12 +136,11 @@ export const MOCK_ORDERS: Order[] = [
         arrival: "HAN (Hà Nội)",
         departTime: "16:00 - 15/08/2026",
         arrivalTime: "18:10 - 15/08/2026",
-        seatClass: "Phổ thông"
-      }
+        seatClass: "Phổ thông",
+      },
     ],
     totalAmount: 6100000,
-    paymentMethod: "Ví VNPay",
     status: "cancelled",
-    createdAt: "05/08/2026 18:00"
-  }
+    createdAt: "05/08/2026 18:00",
+  },
 ];
