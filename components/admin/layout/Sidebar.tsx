@@ -19,8 +19,7 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { name: "Overview", href: "/admin", icon: LayoutDashboard },
-  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { name: "Tổng quát", href: "/admin", icon: LayoutDashboard },
   { name: "Đơn hàng", href: "/admin/orders", icon: ShoppingBag },
   { name: "Khách hàng", href: "/admin/customers", icon: Users },
   { name: "Cài đặt", href: "/admin/settings", icon: Settings },
@@ -56,7 +55,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                 A
               </div>
               <span className="font-semibold text-lg text-white tracking-wide">
-                ApexAdmin
+                Vemaybay
               </span>
             </Link>
             <button

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Home } from "lucide-react";
+import { ArrowUpRight, Home, Wallet } from "lucide-react";
 import { Logo } from "./Logo";
 import Link from "next/link";
 
@@ -27,27 +27,32 @@ export default function Header() {
             <Home className="w-4 h-4" />
             <span>TRANG CHỦ</span>
           </Link>
-          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
-            VÉ NỘI ĐỊA
+
+          {/* Option NẠP TIỀN */}
+          <Link
+            href="/flight/refund"
+            className="px-3 py-2.5 hover:bg-[#004d28] uppercase"
+          >
+            <span>HOÀN TIỀN</span>
           </Link>
-          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
-            VÉ QUỐC TẾ
+
+          {/* Option RÚT TIỀN */}
+          <Link
+            href="/flight/refund/history"
+            className="px-3 py-2.5 hover:bg-[#004d28] uppercase"
+          >
+            <span>LỊCH SỬ</span>
           </Link>
-          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
-            TOUR, VISA, KHÁCH SẠN
-          </Link>
-          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
+
+          <Link href="/blog" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
             TIN TỨC
           </Link>
-          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
-            TIN KHUYẾN MẠI
-          </Link>
-          <Link
-            href="/"
-            className="bg-[#ffb703] text-gray-900 font-bold px-3 py-2.5 hover:bg-yellow-500 uppercase"
-          >
+
+                   <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
+    
             QUẢN LÝ ĐẶT CHỖ
           </Link>
+
           <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
             LIÊN HỆ
           </Link>

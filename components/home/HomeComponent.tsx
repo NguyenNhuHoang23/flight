@@ -1,5 +1,7 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+
+import React from "react";
+import Image from "next/image";
 import {
   Phone,
   List,
@@ -11,48 +13,47 @@ import {
 } from "lucide-react";
 import FormBook from "./FormBook";
 
-// Structure for Airport Categories
+interface FlightBookingUIProps {
+  /** Đường dẫn ảnh banner (mặc định sẽ dùng hình mẫu hoặc đường dẫn truyền vào) */
+  bannerSrc?: string;
+}
 
-export default function FlightBookingUI() {
+export default function FlightBookingUI({
+  bannerSrc = "/images/banner.jpg", // Thay đường dẫn ảnh của bạn ở đây
+}: FlightBookingUIProps) {
   return (
     <>
-      {" "}
-      {/* 4. Main Search Form Area */}
+      {/* 1. Main Search Form Area */}
       <main className="max-w-8xl mx-auto px-4 md:px-16 py-2 grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
         {/* Left Flight Search Box */}
         <FormBook />
 
         {/* Right Section: Banner & News Feed */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-          <div className="relative bg-orange-100 rounded overflow-hidden border border-orange-200 shadow-sm">
-            <div className="p-4 bg-gradient-to-r from-yellow-100 via-orange-100 to-red-100 min-h-[180px] flex flex-col justify-center items-center text-center relative">
-              <div className="text-orange-600 text-xs font-semibold tracking-wider uppercase">
-                Sun PhuQuoc Airways
-              </div>
-              <h3 className="text-2xl font-black text-red-600 italic leading-tight">
-                Đặt sớm <br />
-                <span className="text-3xl font-extrabold text-orange-500 not-italic">
-                  DEAL HỜI
-                </span>
-              </h3>
-              <p className="text-xs text-red-700 font-semibold mt-1">
-                KHI ĐẶT VÉ TRƯỚC 21 NGÀY
-              </p>
+     {/* BANNER NỀN BẰNG NEXT/IMAGE */}
+{/* BANNER NỀN BẰNG NEXT/IMAGE */}
+<div className="relative rounded overflow-hidden border border-gray-200 shadow-sm h-[180px] w-full bg-gray-100 flex items-center justify-center">
+  {/* Ảnh banner */}
+  <Image
+    src={bannerSrc}
+    alt="Banner Sun PhuQuoc Airways"
+    fill
+    priority
+    className="object-contain object-center"
+    sizes="(max-width: 1024px) 100vw, 40vw"
+  />
 
-              <div className="mt-2 bg-red-600 text-white font-bold px-3 py-1 text-xs rounded-full shadow">
-                GIẢM 15%
-              </div>
-            </div>
+  {/* Các chấm slider/dot indicator */}
+  <div className="absolute bottom-2 left-0 right-0 flex justify-center space-x-1.5 z-10">
+    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
+    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
+    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
+    <span className="w-2 h-2 rounded-full bg-white shadow-sm"></span>
+    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
+  </div>
+</div>
 
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center space-x-1.5">
-              <span className="w-2 h-2 rounded-full bg-white opacity-60"></span>
-              <span className="w-2 h-2 rounded-full bg-white opacity-60"></span>
-              <span className="w-2 h-2 rounded-full bg-white opacity-60"></span>
-              <span className="w-2 h-2 rounded-full bg-white"></span>
-              <span className="w-2 h-2 rounded-full bg-white opacity-60"></span>
-            </div>
-          </div>
-
+          {/* Tin mới cập nhật */}
           <div className="bg-white p-3 rounded border border-gray-200">
             <div className="flex items-center space-x-2 border-b pb-2 mb-2">
               <List className="w-4 h-4 text-blue-900" />
@@ -86,7 +87,8 @@ export default function FlightBookingUI() {
           </div>
         </div>
       </main>
-      {/* 5. Bottom Section: Recent Orders & Contact */}
+
+      {/* 2. Bottom Section: Recent Orders & Contact */}
       <section className="max-w-8xl mx-auto px-4 md:px-16 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 border-t mt-4 bg-white">
         {/* Recent Bookings */}
         <div className="lg:col-span-6">

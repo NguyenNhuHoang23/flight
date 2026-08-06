@@ -16,22 +16,14 @@ export const PriceDisplayFilter: React.FC<Props> = ({
       </div>
 
       <div className="p-3 space-y-2 text-xs">
-        <label className="flex items-center gap-2 cursor-pointer text-gray-800">
-          <input
-            type="radio"
-            name="priceDisplay"
-            checked={!showTotalPrice}
-            onChange={() => setShowTotalPrice(false)}
-          />
-          Giá cơ bản (chưa thuế phí)
-        </label>
 
         <label className="flex items-center gap-2 cursor-pointer text-gray-800">
           <input
             type="radio"
             name="priceDisplay"
-            checked={showTotalPrice}
-            onChange={() => setShowTotalPrice(true)}
+                        checked={!showTotalPrice}
+
+            onChange={() => setShowTotalPrice(false)}
           />
           Tổng giá vé (đã gồm thuế + phí)
         </label>

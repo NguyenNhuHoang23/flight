@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 
 import { ApiRootResponse } from "./flight-types";
 import { FlightHeader } from "./FlightHeader";
@@ -11,20 +11,26 @@ import { FlightSidebar } from "./FlightSidebar";
 
 export const FlightBookingHome: React.FC = () => {
   const params = useParams();
+  const router = useRouter();
+
   const rawId = params?.id ? String(params.id).replace(".htm", "") : "";
 
-  const [rawApiResponse, setRawApiResponse] = useState<ApiRootResponse | null>(
-    null,
-  );
+  const [rawApiResponse, setRawApiResponse] = useState<ApiRootResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingDate, setIsFetchingDate] = useState(false);
   const [showTotalPrice, setShowTotalPrice] = useState(false);
+
+  const [selectedDepartFlight, setSelectedDepartFlight] = useState<any | null>(null);
+  const [selectedReturnFlight, setSelectedReturnFlight] = useState<any | null>(null);
+
+  // STATE EXPAND DÀNH CHO CÁC MÀN HÌNH MỞ CỦA TỪNG CHIỀU
   const [expandedIndices, setExpandedIndices] = useState<number[]>([]);
+  const [departExpandedIndices, setDepartExpandedIndices] = useState<number[]>([]);
+  const [returnExpandedIndices, setReturnExpandedIndices] = useState<number[]>([]);
 
-  // State ngày được chọn
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [departDate, setDepartDate] = useState<Date>(new Date());
+  const [returnDate, setReturnDate] = useState<Date | null>(null);
 
-  // Helper convert Date sang DDMMYYYY theo chuẩn API Datacom
   const formatDateToDDMMYYYY = (date: Date): string => {
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -32,39 +38,29 @@ export const FlightBookingHome: React.FC = () => {
     return `${day}${month}${year}`;
   };
 
-  // Helper parse date từ API
   const parseApiDate = (dateStr?: string): Date => {
     if (!dateStr) return new Date();
-
-    // Dạng DD/MM/YYYY hoặc DD/MM/YYYY HH:mm:ss
     if (dateStr.includes("/")) {
       const parts = dateStr.split(" ")[0].split("/");
       if (parts.length === 3) {
-        return new Date(
-          Number(parts[2]),
-          Number(parts[1]) - 1,
-          Number(parts[0]),
-        );
+        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
       }
     }
-
-    // Dạng DDMMYYYY (8 chữ số)
     if (/^\d{8}$/.test(dateStr)) {
       const day = Number(dateStr.slice(0, 2));
       const month = Number(dateStr.slice(2, 4));
       const year = Number(dateStr.slice(4, 8));
       return new Date(year, month - 1, day);
     }
-
     const parsed = new Date(dateStr);
     return !isNaN(parsed.getTime()) ? parsed : new Date();
   };
 
-  // 1. Tải dữ liệu ban đầu từ SessionStorage
+  const groups = rawApiResponse?.ListGroup || [];
+  const isRoundTrip = groups.length >= 2;
+
   useEffect(() => {
-    const storageKey = rawId
-      ? `flight_search_${rawId}`
-      : "flight_search_result";
+    const storageKey = rawId ? `flight_search_${rawId}` : "flight_search_result";
     const storedData = sessionStorage.getItem(storageKey);
 
     if (storedData) {
@@ -73,45 +69,93 @@ export const FlightBookingHome: React.FC = () => {
         setRawApiResponse(parsedData);
 
         const departDateStr = parsedData?.ListGroup?.[0]?.DepartDate;
-        if (departDateStr) {
-          setSelectedDate(parseApiDate(departDateStr));
-        }
+        if (departDateStr) setDepartDate(parseApiDate(departDateStr));
+
+        const returnDateStr = parsedData?.ListGroup?.[1]?.DepartDate;
+        if (returnDateStr) setReturnDate(parseApiDate(returnDateStr));
       } catch (error) {
         console.error("Lỗi parse JSON session storage:", error);
       }
     }
-
     setIsLoading(false);
   }, [rawId]);
 
   const toggleExpand = (index: number) => {
     setExpandedIndices((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
   };
 
-  // 2. Hàm xử lý khi CLICK ĐỔI NGÀY trên Header
-  const handleSelectDate = async (newDate: Date) => {
-    if (newDate.toDateString() === selectedDate.toDateString()) return;
+  const toggleDepartExpand = (index: number) => {
+    setDepartExpandedIndices((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    );
+  };
 
-    setSelectedDate(newDate);
-    setExpandedIndices([]); // Đóng toàn bộ dropdown đang mở
+  const toggleReturnExpand = (index: number) => {
+    setReturnExpandedIndices((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    );
+  };
+
+  const getDateList = (date: Date) => {
+    return [-1, 0, 1].map((offset) => {
+      const d = new Date(date);
+      d.setDate(d.getDate() + offset);
+      return d;
+    });
+  };
+
+  const getDayName = (date: Date) => {
+    const days = ["C.NHẬT", "T.HAI", "T.BA", "T.TƯ", "T.NĂM", "T.SÁU", "T.BẢY"];
+    return days[date.getDay()];
+  };
+
+  const formatShortDate = (date: Date) => {
+    return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const isSameDate = (date1: Date, date2: Date) => {
+    return (
+      date1.getDate() === date2.getDate() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getFullYear() === date2.getFullYear()
+    );
+  };
+
+  const startOfDay = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const searchRoundTrip = async (newDepartDate: Date, newReturnDate: Date) => {
+    const currentDepartGroup = rawApiResponse?.ListGroup?.[0];
+    const currentReturnGroup = rawApiResponse?.ListGroup?.[1];
+    if (!currentDepartGroup) return;
+
     setIsFetchingDate(true);
+    setDepartExpandedIndices([]);
+    setReturnExpandedIndices([]);
+    setExpandedIndices([]);
 
-    const currentGroup = rawApiResponse?.ListGroup?.[0];
-
-    // Tạo payload chuẩn Datacom API với ngày mới
     const payload = {
-      Adt: currentGroup?.Adt || 1,
-      Chd: currentGroup?.Chd || 0,
-      Inf: currentGroup?.Inf || 0,
+      Adt: currentDepartGroup.Adt || 1,
+      Chd: currentDepartGroup.Chd || 0,
+      Inf: currentDepartGroup.Inf || 0,
       Tourcode: "",
       ListRoute: [
         {
           Leg: 0,
-          StartPoint: currentGroup?.StartPoint || "SGN",
-          EndPoint: currentGroup?.EndPoint || "HAN",
-          DepartDate: formatDateToDDMMYYYY(newDate),
+          StartPoint: currentDepartGroup.StartPoint || "SGN",
+          EndPoint: currentDepartGroup.EndPoint || "HAN",
+          DepartDate: formatDateToDDMMYYYY(newDepartDate),
+        },
+        {
+          Leg: 1,
+          StartPoint: currentReturnGroup?.StartPoint || currentDepartGroup.EndPoint || "HAN",
+          EndPoint: currentReturnGroup?.EndPoint || currentDepartGroup.StartPoint || "SGN",
+          DepartDate: formatDateToDDMMYYYY(newReturnDate),
         },
       ],
       Option: {
@@ -130,73 +174,255 @@ export const FlightBookingHome: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
       const newData: ApiRootResponse = await response.json();
 
-      // Cập nhật lại UI danh sách chuyến bay mới
       setRawApiResponse(newData);
+      setDepartDate(newDepartDate);
+      setReturnDate(newReturnDate);
 
-      // Cập nhật lại sessionStorage nếu cần đồng bộ
-      const storageKey = rawId
-        ? `flight_search_${rawId}`
-        : "flight_search_result";
+      const storageKey = rawId ? `flight_search_${rawId}` : "flight_search_result";
       sessionStorage.setItem(storageKey, JSON.stringify(newData));
     } catch (error) {
-      console.error("Lỗi khi call API lấy chuyến bay ngày mới:", error);
+      console.error("Lỗi khi search vé khứ hồi:", error);
     } finally {
       setIsFetchingDate(false);
     }
   };
 
+  const handleDepartDate = (date: Date) => {
+    const selected = startOfDay(date);
+    const currentDate = startOfDay(new Date());
+
+    if (selected < currentDate) {
+      alert("Ngày đi không được nhỏ hơn ngày hiện tại!");
+      return;
+    }
+
+    if (returnDate) {
+      const currentReturnDate = startOfDay(returnDate);
+      if (selected >= currentReturnDate) {
+        alert("Ngày đi phải trước ngày về!");
+        return;
+      }
+      searchRoundTrip(selected, currentReturnDate);
+      return;
+    }
+    setDepartDate(selected);
+  };
+
+  const handleReturnDate = (date: Date) => {
+    const selected = startOfDay(date);
+    const currentDate = startOfDay(new Date());
+    const currentDepartDate = startOfDay(departDate);
+
+    if (selected < currentDate) {
+      alert("Ngày về không được nhỏ hơn ngày hiện tại!");
+      return;
+    }
+    if (selected <= currentDepartDate) {
+      alert("Ngày về phải sau ngày đi!");
+      return;
+    }
+    searchRoundTrip(currentDepartDate, selected);
+  };
+
+  // Chọn chuyến bay trực tiếp khi click vào item
+  const handleSelectFlight = (flight: any, direction: "depart" | "return") => {
+    if (!isRoundTrip) {
+      sessionStorage.setItem("selected_depart_flight", JSON.stringify(flight));
+      router.push("/flight/passenger");
+      return;
+    }
+
+    if (direction === "depart") {
+      setSelectedDepartFlight(flight);
+      sessionStorage.setItem("selected_depart_flight", JSON.stringify(flight));
+      if (selectedReturnFlight) {
+        sessionStorage.setItem("selected_return_flight", JSON.stringify(selectedReturnFlight));
+        router.push("/flight/passenger");
+      }
+    } else {
+      setSelectedReturnFlight(flight);
+      sessionStorage.setItem("selected_return_flight", JSON.stringify(flight));
+      if (selectedDepartFlight) {
+        sessionStorage.setItem("selected_depart_flight", JSON.stringify(selectedDepartFlight));
+        router.push("/flight/passenger");
+      }
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-3">
         <Loader2 className="animate-spin text-[#006838]" size={40} />
+        <p className="text-sm font-medium text-slate-600">Đang tải thông tin chuyến bay...</p>
       </div>
     );
   }
 
-  const group = rawApiResponse?.ListGroup?.[0];
-  const airOptions = group?.ListAirOption || [];
+  const departGroup = rawApiResponse?.ListGroup?.[0];
+  const returnGroup = rawApiResponse?.ListGroup?.[1];
+  const departAirOptions = departGroup?.ListAirOption || [];
+  const returnAirOptions = returnGroup?.ListAirOption || [];
+
+  const DateTabStrip = ({
+    dates,
+    selectedDate,
+    onSelect,
+    activeColorClass,
+    isReturn = false,
+  }: {
+    dates: Date[];
+    selectedDate: Date;
+    onSelect: (d: Date) => void;
+    activeColorClass: string;
+    isReturn?: boolean;
+  }) => (
+    <div className="flex bg-slate-100 border-b border-slate-200 overflow-x-auto no-scrollbar">
+      {dates.map((date) => {
+        const active = isSameDate(date, selectedDate);
+        const currentDate = startOfDay(new Date());
+        const dateItem = startOfDay(date);
+        const disabled = isReturn
+          ? dateItem <= startOfDay(departDate)
+          : dateItem < currentDate;
+
+        return (
+          <button
+            key={date.toISOString()}
+            type="button"
+            disabled={disabled}
+            onClick={() => onSelect(date)}
+            className={`flex-1 py-1.5 px-0.5 text-center transition-all border-r border-slate-200 last:border-r-0 ${
+              active
+                ? `${activeColorClass} text-white font-semibold`
+                : disabled
+                ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                : "bg-slate-200/70 text-slate-700 hover:bg-slate-200 cursor-pointer"
+            }`}
+          >
+            <div className="text-[10px] font-bold leading-tight">{getDayName(date)}</div>
+            <div className="text-[11px] font-medium leading-tight">{formatShortDate(date)}</div>
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-4 gap-4 bg-gray-100 min-h-screen font-sans text-gray-800">
-      <section className="lg:col-span-3 space-y-3">
-        <FlightHeader
-          group={group}
-          airOptionsCount={airOptions.length}
-          showTotalPrice={showTotalPrice}
-          selectedDate={selectedDate}
-          onSelectDate={handleSelectDate}
-        />
+    <main className="max-w-7xl mx-auto px-1 sm:px-4 py-2 sm:py-6 bg-slate-100 min-h-screen font-sans text-slate-800">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+        <section className="lg:col-span-3 space-y-4">
+          {isFetchingDate ? (
+            <div className="bg-white rounded-xl border border-slate-200 min-h-[450px] flex flex-col items-center justify-center p-8 gap-3 shadow-sm">
+              <Loader2 className="animate-spin text-[#006838]" size={42} />
+              <span className="text-sm font-medium text-slate-600">
+                Đang tìm kiếm chuyến bay mới...
+              </span>
+            </div>
+          ) : isRoundTrip && returnDate ? (
+            <>
+              {/* Grid 2 Cột hiển thị song song ngay cả trên Mobile */}
+              <div className="grid grid-cols-2 gap-1 sm:gap-4">
+                {/* CHIỀU ĐI */}
+                <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                  {/* Header Cột Đi */}
+                  <div className="bg-[#006838] text-white px-2 py-2 text-center shadow-sm">
+                    <div className="font-bold text-xs sm:text-base tracking-wide uppercase">
+                      {departGroup?.StartPoint} → {departGroup?.EndPoint}
+                    </div>
+                    <div className="text-[10px] sm:text-xs opacity-90 mt-0.5">
+                      {getDayName(departDate)}, {formatShortDate(departDate)}/{departDate.getFullYear()}, {departGroup?.Adt || 1} khách
+                    </div>
+                  </div>
 
-        {/* Màn hình loading khi đổi ngày */}
-        {isFetchingDate ? (
-          <div className="bg-white p-12 flex flex-col items-center justify-center rounded border border-gray-200 gap-3 shadow-sm min-h-[300px]">
-            <Loader2 className="animate-spin text-[#006838]" size={36} />
-            <span className="text-sm text-gray-600 font-medium">
-              Đang tìm kiếm chuyến bay cho ngày{" "}
-              {selectedDate.toLocaleDateString("vi-VN")}...
-            </span>
+                  <DateTabStrip
+                    dates={getDateList(departDate)}
+                    selectedDate={departDate}
+                    onSelect={handleDepartDate}
+                    activeColorClass="bg-[#006838]"
+                  />
+
+                  <div className="p-1 sm:p-3 flex-1 bg-white">
+                    <FlightList
+                      group={departGroup}
+                      airOptions={departAirOptions}
+                      showTotalPrice={showTotalPrice}
+                      expandedIndices={departExpandedIndices}
+                      toggleExpand={toggleDepartExpand}
+                      onSelectFlight={(flight) => handleSelectFlight(flight, "depart")}
+                      selectedFlight={selectedDepartFlight}
+                    />
+                  </div>
+                </div>
+
+                {/* CHIỀU VỀ */}
+                <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                  {/* Header Cột Về */}
+                  <div className="bg-[#FF5126] text-white px-2 py-2 text-center shadow-sm">
+                    <div className="font-bold text-xs sm:text-base tracking-wide uppercase">
+                      {returnGroup?.StartPoint} → {returnGroup?.EndPoint}
+                    </div>
+                    <div className="text-[10px] sm:text-xs opacity-90 mt-0.5">
+                      {getDayName(returnDate)}, {formatShortDate(returnDate)}/{returnDate.getFullYear()}, {returnGroup?.Adt || 1} khách
+                    </div>
+                  </div>
+
+                  <DateTabStrip
+                    dates={getDateList(returnDate)}
+                    selectedDate={returnDate}
+                    onSelect={handleReturnDate}
+                    activeColorClass="bg-[#FF5126]"
+                    isReturn
+                  />
+
+                  <div className="p-1 sm:p-3 flex-1 bg-white">
+                    <FlightList
+                      group={returnGroup}
+                      airOptions={returnAirOptions}
+                      showTotalPrice={showTotalPrice}
+                      expandedIndices={returnExpandedIndices}
+                      toggleExpand={toggleReturnExpand}
+                      onSelectFlight={(flight) => handleSelectFlight(flight, "return")}
+                      selectedFlight={selectedReturnFlight}
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* MỘT CHIỀU (ONE WAY) */
+            <div className="space-y-4">
+              <FlightHeader
+                group={departGroup}
+                airOptionsCount={departAirOptions.length}
+                showTotalPrice={showTotalPrice}
+                selectedDate={departDate}
+                onSelectDate={handleDepartDate}
+              />
+              <FlightList
+                group={departGroup}
+                airOptions={departAirOptions}
+                showTotalPrice={showTotalPrice}
+                expandedIndices={expandedIndices}
+                toggleExpand={toggleExpand}
+                onSelectFlight={(flight) => handleSelectFlight(flight, "depart")}
+                selectedFlight={selectedDepartFlight}
+              />
+            </div>
+          )}
+        </section>
+
+        <aside className="lg:col-span-1">
+          <div className="sticky top-4">
+            <FlightSidebar
+              showTotalPrice={showTotalPrice}
+              setShowTotalPrice={setShowTotalPrice}
+            />
           </div>
-        ) : (
-          <FlightList
-            group={group}
-            airOptions={airOptions}
-            showTotalPrice={showTotalPrice}
-            expandedIndices={expandedIndices}
-            toggleExpand={toggleExpand}
-          />
-        )}
-      </section>
-
-      <FlightSidebar
-        showTotalPrice={showTotalPrice}
-        setShowTotalPrice={setShowTotalPrice}
-      />
+        </aside>
+      </div>
     </main>
   );
 };

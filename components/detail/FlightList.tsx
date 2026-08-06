@@ -1,4 +1,5 @@
 import React from "react";
+import { CalendarX } from "lucide-react";
 
 import { AirOptionAPI, ApiRootResponse } from "./flight-types";
 import { FlightRow } from "./FlightRow";
@@ -9,6 +10,8 @@ interface Props {
   showTotalPrice: boolean;
   expandedIndices: number[];
   toggleExpand: (index: number) => void;
+  onSelectFlight?: (flight: AirOptionAPI) => void;
+  selectedFlight?: AirOptionAPI | null;
 }
 
 export const FlightList: React.FC<Props> = ({
@@ -17,17 +20,22 @@ export const FlightList: React.FC<Props> = ({
   showTotalPrice,
   expandedIndices,
   toggleExpand,
+  onSelectFlight,
+  selectedFlight,
 }) => {
-  if (airOptions.length === 0) {
+  if (!airOptions || airOptions.length === 0) {
     return (
-      <div className="bg-white p-8 text-center text-gray-500 rounded border">
-        Không tìm thấy dữ liệu chuyến bay.
+      <div className="bg-white p-6 sm:p-8 text-center rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2 shadow-sm">
+        <CalendarX className="w-9 h-9 text-slate-300" />
+        <p className="text-xs sm:text-sm font-medium text-slate-500">
+          Không tìm thấy chuyến bay phù hợp cho ngày đã chọn.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-b shadow-sm divide-y divide-gray-200">
+    <div className="space-y-2.5 sm:space-y-3">
       {airOptions.map((airOption, idx) => (
         <FlightRow
           key={idx}
@@ -37,6 +45,11 @@ export const FlightList: React.FC<Props> = ({
           showTotalPrice={showTotalPrice}
           isExpanded={expandedIndices.includes(idx)}
           toggleExpand={toggleExpand}
+          onSelectFlight={onSelectFlight}
+isSelected={
+  selectedFlight?.ListFlightOption?.[0]?.ListFlight?.[0]?.FlightNumber ===
+  airOption.ListFlightOption?.[0]?.ListFlight?.[0]?.FlightNumber
+}
         />
       ))}
     </div>
