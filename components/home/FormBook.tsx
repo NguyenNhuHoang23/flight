@@ -20,7 +20,16 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useFlightSearch } from "@/hook/useFlightSearch";
 
-// Structure for Airport Categories
+// Helper bỏ dấu tiếng Việt để search tiếng Việt không dấu chuẩn hơn
+const removeVietnameseTones = (str: string) => {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+};
+
 interface AirportItem {
   id: string;
   name: string;
@@ -164,8 +173,8 @@ export default function FormBook() {
   const [chd, setChd] = useState(0);
   const [inf, setInf] = useState(0);
   const router = useRouter();
-  const { searchFlight, loading, error, flightData } = useFlightSearch();
-  // Hàm hỗ trợ đổi ngày Dương lịch sang Âm lịch dạng chuỗi
+  const { searchFlight, loading, error } = useFlightSearch();
+
   const getLunarDateString = (date: Date | null) => {
     if (!date) return "";
     try {
@@ -193,16 +202,13 @@ export default function FormBook() {
       return "";
     }
   };
-  // State for opening Airport Selection Modal/Dropdown
-  // 'origin' | 'destination' | null
+
   const [activeSelectType, setActiveSelectType] = useState<
     "origin" | "destination" | null
   >(null);
   const [searchQuery, setSearchQuery] = useState("");
-
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -244,30 +250,21 @@ export default function FormBook() {
     });
 
     if (res) {
-      // API Datacom trả về Session / SessionId hoặc bạn tự tạo mã định danh duy nhất (ví dụ: Date.now())
       const sessionId = res.Session || res.SearchId || Date.now();
-
-      // Lưu kết quả hoặc các tham số tìm kiếm vào sessionStorage/localStorage để trang /flight/search sử dụng
       if (typeof window !== "undefined") {
         sessionStorage.setItem(
           `flight_search_${sessionId}`,
           JSON.stringify(res),
         );
       }
-
-      // Chuyển hướng sang trang kết quả giống URL của bạn: /flight/search/1712353639.htm
       router.push(`/flight/search/${sessionId}`);
     }
   };
 
-  // Filter airports according to search query
+  // Logic lọc theo ký tự đầu, mã ID, tên không dấu & chữ cái đầu tên
   const filteredAirportData = AIRPORT_DATA.map((cat) => ({
     ...cat,
     airports: cat.airports.filter((ap) => {
-      const matchesSearch = ap.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-
       const isExcluded =
         activeSelectType === "destination"
           ? ap.name === fromLocation
@@ -275,7 +272,27 @@ export default function FormBook() {
             ? ap.name === toLocation
             : false;
 
-      return matchesSearch && !isExcluded;
+      if (isExcluded) return false;
+      if (!searchQuery.trim()) return true;
+
+      const cleanQuery = removeVietnameseTones(searchQuery.trim());
+      const cleanName = removeVietnameseTones(ap.name);
+      const cleanId = ap.id.toLowerCase();
+
+      // 1. Khớp mã sân bay (VD: HAN, SGN)
+      const matchesId = cleanId.includes(cleanQuery);
+
+      // 2. Tên chứa từ khóa
+      const matchesName = cleanName.includes(cleanQuery);
+
+      // 3. Khớp các chữ cái đầu từ (VD: "hn" -> "Hà Nội", "hcm" -> "Hồ Chí Minh")
+      const initials = cleanName
+        .split(/[\s(),]+/)
+        .map((word) => word[0])
+        .join("");
+      const matchesInitials = initials.includes(cleanQuery);
+
+      return matchesId || matchesName || matchesInitials;
     }),
   })).filter((cat) => cat.airports.length > 0);
 
@@ -343,72 +360,188 @@ export default function FormBook() {
             </div>
           </div>
 
+          {/* Modal / Dropdown thu gọn */}
           {activeSelectType && (
-            <div
-              ref={dropdownRef}
-              className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-2xl overflow-hidden w-full min-w-[700px] md:w-[820px]"
-              style={{ top: "60px" }}
-            >
-              <div className="bg-[#006837] text-white px-4 py-2.5 flex justify-between items-center">
-                <h3 className="font-bold text-sm tracking-wide uppercase">
-                  {activeSelectType === "origin"
-                    ? "CHỌN ĐIỂM ĐI"
-                    : "CHỌN ĐIỂM ĐẾN"}
-                </h3>
-                <button
-                  onClick={() => setActiveSelectType(null)}
-                  className="text-red-500 hover:text-red-400 p-0.5 rounded transition font-bold"
+<div
+  ref={dropdownRef}
+  className={`fixed inset-0 z-50 bg-white md:absolute md:inset-auto md:top-[50px] ${
+    activeSelectType === "destination"
+      ? "md:right-0 md:left-auto"
+      : "md:left-0 md:right-auto"
+  } md:w-full md:max-w-5xl md:rounded-none md:shadow-xl overflow-hidden text-xs flex flex-col`}
+>
+  {/* 1. Header Modal */}
+  <div className="bg-[#006837] text-white px-3 py-1 flex justify-between items-center font-bold">
+    <h3 className={`text-xs tracking-wide uppercase`}>
+      {activeSelectType === "origin" ? "CHỌN ĐIỂM ĐI" : "CHỌN ĐIỂM ĐẾN"}
+    </h3>
+    <button
+      onClick={() => setActiveSelectType(null)}
+      className="text-red-500 hover:text-red-400 font-bold text-sm leading-none"
+    >
+      ✕
+    </button>
+  </div>
+
+  {/* 2. Bar Tìm kiếm (Đã chống zoom mobile & giống hệt ảnh) */}
+  <div className="bg-[#f0f0f0] px-4 py-2 border-b border-gray-200 flex items-center justify-center gap-2">
+    <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+      Tìm kiếm:
+    </span>
+    <div className="relative flex items-center">
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Nhập mã sân bay; tên sân bay, thành phố, nước"
+        // text-base md:text-xs để chặn iOS/Android auto-zoom
+        className="w-[340px] px-2.5 py-1 bg-white border border-gray-300 rounded-none text-base md:text-xs focus:outline-none focus:border-green-600 placeholder:text-gray-400"
+        autoFocus
+      />
+      <button className="ml-2 text-[#f2542d] hover:opacity-80">
+        <Search className="w-5 h-5 stroke-[2.5]" />
+      </button>
+    </div>
+  </div>
+
+  {/* 3. Content 6 Cột chuẩn Layout ảnh */}
+  <div className="p-4 max-h-[420px] overflow-y-auto bg-white">
+    {filteredAirportData.length === 0 ? (
+      <div className="text-center py-6 text-gray-500 text-xs">
+        Không tìm thấy sân bay phù hợp với "{searchQuery}"
+      </div>
+    ) : searchQuery.trim() !== "" ? (
+      /* Khi có Tuỳ chọn Tìm kiếm: Hiển thị Grid linh hoạt */
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-4 gap-y-3">
+        {filteredAirportData.map((category, idx) => (
+          <div key={idx} className="space-y-1">
+            <h4 className="text-[#d84315] font-bold text-[11px] uppercase tracking-tight">
+              {category.title}
+            </h4>
+            <ul className="space-y-0.5 text-[11px] leading-tight text-gray-600">
+              {category.airports.map((airport) => (
+                <li
+                  key={airport.id}
+                  onClick={() => handleSelectAirport(airport.name)}
+                  className="hover:text-[#006837] hover:underline cursor-pointer transition py-0.5"
                 >
-                  <X className="w-5 h-5 stroke-[2.5]" />
-                </button>
-              </div>
-
-              <div className="bg-[#f2f2f2] px-4 py-3 border-b flex items-center justify-center space-x-2">
-                <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                  Tìm kiếm:
-                </span>
-                <div className="relative w-full max-w-lg flex items-center">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Nhập mã sân bay; tên sân bay, thành phố, nước"
-                    className="w-full px-3 py-1.5 bg-white border border-gray-300 rounded text-xs focus:outline-none focus:border-green-600 pr-8"
-                    autoFocus
-                  />
-                  <Search className="w-4 h-4 text-[#f2542d] absolute right-2.5 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="p-4 max-h-[420px] overflow-y-auto bg-white">
-                {filteredAirportData.length === 0 ? (
-                  <div className="text-center py-6 text-gray-500 text-xs">
-                    Không tìm thấy sân bay phù hợp với {searchQuery}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {filteredAirportData.map((category, idx) => (
-                      <div key={idx} className="space-y-1.5">
-                        <h4 className="text-[#d84315] font-bold text-[11px] uppercase tracking-tight border-b border-orange-100 pb-1">
-                          {category.title}
-                        </h4>
-                        <ul className="space-y-1 text-[11px]">
-                          {category.airports.map((airport) => (
-                            <li
-                              key={airport.id}
-                              onClick={() => handleSelectAirport(airport.name)}
-                              className="text-gray-700 hover:text-[#006837] hover:bg-green-50 px-1 py-0.5 rounded cursor-pointer transition font-normal"
-                            >
-                              {airport.name}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  {airport.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    ) : (
+      /* Khi Mặc định (Không search): Ghép Cột Y Hệt Như Trong Ảnh */
+      <div className="grid grid-cols-6 gap-x-4 text-[11px] leading-tight text-gray-600">
+        {/* Cột 1: Miền Bắc & Miền Trung */}
+        <div className="space-y-3">
+          {AIRPORT_DATA.find((c) => c.title === "MIỀN BẮC") && (
+            <div>
+              <h4 className="text-[#d84315] font-bold uppercase mb-1">MIỀN BẮC</h4>
+              <ul className="space-y-1">
+                {AIRPORT_DATA.find((c) => c.title === "MIỀN BẮC")?.airports.map((ap) => (
+                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                    {ap.name}
+                  </li>
+                ))}
+              </ul>
             </div>
+          )}
+          {AIRPORT_DATA.find((c) => c.title === "MIỀN TRUNG") && (
+            <div>
+              <h4 className="text-[#d84315] font-bold uppercase mb-1">MIỀN TRUNG</h4>
+              <ul className="space-y-1">
+                {AIRPORT_DATA.find((c) => c.title === "MIỀN TRUNG")?.airports.map((ap) => (
+                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                    {ap.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Cột 2: Miền Nam */}
+        <div>
+          <h4 className="text-[#d84315] font-bold uppercase mb-1">MIỀN NAM</h4>
+          <ul className="space-y-1">
+            {AIRPORT_DATA.find((c) => c.title === "MIỀN NAM")?.airports.map((ap) => (
+              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                {ap.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Cột 3: Đông Nam Á + Úc & Châu Úc */}
+        <div className="space-y-3">
+          {AIRPORT_DATA.find((c) => c.title === "ĐÔNG NAM Á + ÚC") && (
+            <div>
+              <h4 className="text-[#d84315] font-bold uppercase mb-1">ĐÔNG NAM Á + ÚC</h4>
+              <ul className="space-y-1">
+                {AIRPORT_DATA.find((c) => c.title === "ĐÔNG NAM Á + ÚC")?.airports.map((ap) => (
+                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                    {ap.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {AIRPORT_DATA.find((c) => c.title === "CHÂU ÚC") && (
+            <div>
+              <h4 className="text-[#d84315] font-bold uppercase mb-1">CHÂU ÚC</h4>
+              <ul className="space-y-1">
+                {AIRPORT_DATA.find((c) => c.title === "CHÂU ÚC")?.airports.map((ap) => (
+                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                    {ap.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Cột 4: Đông Bắc Á */}
+        <div>
+          <h4 className="text-[#d84315] font-bold uppercase mb-1">ĐÔNG BẮC Á</h4>
+          <ul className="space-y-1">
+            {AIRPORT_DATA.find((c) => c.title === "ĐÔNG BẮC Á")?.airports.map((ap) => (
+              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                {ap.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Cột 5: Châu Âu */}
+        <div>
+          <h4 className="text-[#d84315] font-bold uppercase mb-1">CHÂU ÂU</h4>
+          <ul className="space-y-1">
+            {AIRPORT_DATA.find((c) => c.title === "CHÂU ÂU")?.airports.map((ap) => (
+              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                {ap.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Cột 6: Châu Mỹ */}
+        <div>
+          <h4 className="text-[#d84315] font-bold uppercase mb-1">CHÂU MỸ</h4>
+          <ul className="space-y-1">
+            {AIRPORT_DATA.find((c) => c.title === "CHÂU MỸ")?.airports.map((ap) => (
+              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
+                {ap.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
           )}
         </div>
 
@@ -528,7 +661,6 @@ export default function FormBook() {
           </div>
         </div>
 
-        {/* Thông báo lỗi nếu có */}
         {error && (
           <div className="text-red-500 text-xs mt-1 font-semibold">{error}</div>
         )}

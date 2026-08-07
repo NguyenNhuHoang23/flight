@@ -311,7 +311,7 @@ export const FlightBookingHome: React.FC = () => {
   );
 
   return (
-    <main className="max-w-7xl mx-auto px-1 sm:px-4 py-2 sm:py-6 bg-slate-100 min-h-screen font-sans text-slate-800">
+    <main className="max-w-6xl mx-auto px-1 sm:px-4 py-2 sm:py-6 bg-slate-100 min-h-screen font-sans text-slate-800">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
         <section className="lg:col-span-3 space-y-4">
           {isFetchingDate ? (

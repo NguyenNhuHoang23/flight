@@ -24,6 +24,8 @@ const navItems = [
   { name: "Khách hàng", href: "/admin/customers", icon: Users },
   { name: "Hoàn tiền", href: "/admin/refunds", icon: BarChart3 },
   { name: "Ngân hàng", href: "/admin/bank", icon: Settings },
+  { name: "Thông tin", href: "/admin/info", icon: Settings },
+  { name: "Giảm giá", href: "/admin/sale", icon: Settings },
   { name: "Hóa đơn", href: "/admin/invoices", icon: BarChart3 },
 ];
 

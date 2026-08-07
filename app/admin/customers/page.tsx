@@ -7,8 +7,7 @@ interface Customer {
   id: string;
   username: string;
   password?: string;
-  fullName: string;
-  dob: string; // YYYY-MM-DD
+  monney: string; // Số tiền
 }
 
 // Dữ liệu mẫu ban đầu
@@ -17,15 +16,13 @@ const INITIAL_CUSTOMERS: Customer[] = [
     id: "1",
     username: "nguyenvana",
     password: "password123",
-    fullName: "Nguyễn Văn A",
-    dob: "1995-05-15",
+    monney: "1000000",
   },
   {
     id: "2",
     username: "tranthib",
     password: "password456",
-    fullName: "Trần Thị B",
-    dob: "1998-10-20",
+    monney: "2000000",
   },
 ];
 
@@ -38,14 +35,13 @@ export default function CustomerManagementPage() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    fullName: "",
-    dob: "",
+    monney: "",
   });
 
   // Mở Popup Tạo mới
   const handleOpenCreateModal = () => {
     setEditingCustomer(null);
-    setFormData({ username: "", password: "", fullName: "", dob: "" });
+    setFormData({ username: "", password: "", monney: "" });
     setIsModalOpen(true);
   };
 
@@ -55,8 +51,7 @@ export default function CustomerManagementPage() {
     setFormData({
       username: customer.username,
       password: customer.password || "",
-      fullName: customer.fullName,
-      dob: customer.dob,
+      monney: customer.monney || "",
     });
     setIsModalOpen(true);
   };
@@ -122,10 +117,9 @@ export default function CustomerManagementPage() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              <th className="px-6 py-3">Họ và tên</th>
               <th className="px-6 py-3">Tài khoản</th>
               <th className="px-6 py-3">Mật khẩu</th>
-              <th className="px-6 py-3">Ngày sinh</th>
+              <th className="px-6 py-3">Số tiền</th>
               <th className="px-6 py-3 text-right">Thao tác</th>
             </tr>
           </thead>
@@ -139,14 +133,11 @@ export default function CustomerManagementPage() {
             ) : (
               customers.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 transition">
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    {item.fullName}
-                  </td>
                   <td className="px-6 py-4">{item.username}</td>
                   <td className="px-6 py-4 text-gray-500">
                     {item.password ? "••••••••" : "N/A"}
                   </td>
-                  <td className="px-6 py-4">{item.dob}</td>
+                  <td className="px-6 py-4">{item.monney}</td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button
                       onClick={() => handleOpenEditModal(item)}
@@ -181,22 +172,6 @@ export default function CustomerManagementPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Họ và tên
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="Nguyễn Văn A"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
                   Tài khoản (Username)
                 </label>
                 <input
@@ -229,14 +204,14 @@ export default function CustomerManagementPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Ngày tháng năm sinh
+                  Số tiền
                 </label>
                 <input
-                  type="date"
+                  type="number"
                   required
-                  value={formData.dob}
+                  value={formData.monney}
                   onChange={(e) =>
-                    setFormData({ ...formData, dob: e.target.value })
+                    setFormData({ ...formData, monney: e.target.value })
                   }
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />

@@ -19,7 +19,7 @@ export default function Header() {
 
       {/* 2. Navigation Bar */}
       <nav className="bg-[#006837] text-white px-4 md:px-16 text-xs md:text-sm font-semibold">
-        <div className="max-w-8xl mx-auto flex flex-wrap items-center">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center">
           <Link
             href="/"
             className="flex items-center space-x-1 bg-[#004d28] px-3 py-2.5 uppercase text-white"

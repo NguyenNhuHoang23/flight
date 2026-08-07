@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import { PhoneCall, Mail, MapPin, ShieldCheck, CreditCard, Clock } from "lucide-react";
 import Fooder from "@/components/layout/Fooder";
+import { Toaster } from "sonner";
 
 interface ClientLayoutProviderProps {
   children: React.ReactNode;
@@ -30,6 +31,7 @@ export default function ClientLayoutProvider({
       <div>
         <Header />
         <main>{children}</main>
+        <Toaster position="top-right" richColors />
       </div>
    <Fooder/>
 

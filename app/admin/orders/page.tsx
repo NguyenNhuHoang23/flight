@@ -58,7 +58,7 @@ export default function AdminOrderListPage() {
   });
 
   return (
-    <div className="space-y-6 min-h-screen bg-slate-50 p-4 md:p-6 font-sans text-slate-800">
+    <div className="space-y-6 min-h-screen bg-slate-50 font-sans text-slate-800">
       {/* PAGE TITLE BAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -190,7 +190,7 @@ export default function AdminOrderListPage() {
                         onClick={() =>
                           setViewingBillUrl(order.paymentProofUrl!)
                         }
-                        className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-300 flex items-center gap-1 transition"
+                        className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white hover:bg-red-500 border border-red-300 flex items-center gap-1 transition"
                       >
                         👁️ Xem bill
                       </button>

@@ -42,6 +42,41 @@ const INITIAL_GROUPS: CustomerGroup[] = [
   },
 ];
 
+// Hàm tạo danh sách mốc giờ cho dropdown dựa vào AM / PM
+const generateTimeOptions = (ampm: "AM" | "PM", currentTime: string) => {
+  const options: { value: string; label: string }[] = [];
+  const startHour = ampm === "AM" ? 0 : 12;
+  const endHour = ampm === "AM" ? 11 : 23;
+
+  for (let h = startHour; h <= endHour; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const formattedHour = h.toString().padStart(2, "0");
+      const formattedMinute = m.toString().padStart(2, "0");
+      const timeVal = `${formattedHour}:${formattedMinute}`;
+
+      // Hiển thị dạng 12h trực quan (Ví dụ: 14:30 PM hiển thị thành 02:30 PM)
+      const displayHour = h % 12 === 0 ? 12 : h % 12;
+      const displayLabel = `${displayHour.toString().padStart(2, "0")}:${formattedMinute} ${ampm}`;
+
+      options.push({ value: timeVal, label: displayLabel });
+    }
+  }
+
+  // Nếu thời gian hiện tại không nằm trong bước nhảy 15 phút (ví dụ "21:44"), thêm nó vào danh sách để không mất dữ liệu
+  if (currentTime && !options.some((opt) => opt.value === currentTime)) {
+    const [hStr, mStr] = currentTime.split(":");
+    const h = parseInt(hStr, 10);
+    const displayHour = h % 12 === 0 ? 12 : h % 12;
+    const displayLabel = `${displayHour.toString().padStart(2, "0")}:${mStr} ${ampm}`;
+
+    options.push({ value: currentTime, label: displayLabel });
+    // Sắp xếp lại danh sách theo thứ tự thời gian
+    options.sort((a, b) => a.value.localeCompare(b.value));
+  }
+
+  return options;
+};
+
 export default function GroupedRefundPage() {
   const [customerGroups, setCustomerGroups] = useState<CustomerGroup[]>(() => {
     if (typeof window !== "undefined") {
@@ -107,11 +142,11 @@ export default function GroupedRefundPage() {
             let [h, m] = timeString.split(":");
             let hours = parseInt(h, 10);
 
-            // Tự động ép giờ về đúng khoảng khi người dùng đổi AM/PM
+            // Tự động chuyển đổi mốc giờ 24h khi toggle giữa AM và PM
             if (selectedAmPm === "PM" && hours < 12) {
-              hours += 12; // Ví dụ nhập 09:30 mà chọn PM -> Đổi thành 21:30
+              hours += 12;
             } else if (selectedAmPm === "AM" && hours >= 12) {
-              hours -= 12; // Ví dụ nhập 21:30 mà chọn AM -> Đổi thành 09:30
+              hours -= 12;
             }
 
             const formattedHours = hours.toString().padStart(2, "0");
@@ -184,14 +219,13 @@ export default function GroupedRefundPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <h1 className="text-xl font-bold text-slate-900">
             Quản lý Lệnh Rút / Hoàn Tiền (Giới hạn khung giờ AM / PM)
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Chọn <strong>PM</strong>: Giờ sẽ chỉ cho phép chọn từ 12:00 đến
-            23:59.
+            Chọn <strong>PM</strong>: Danh sách giờ sẽ lọc tự động từ 12:00 PM đến 11:45 PM.
           </p>
         </div>
 
@@ -217,9 +251,7 @@ export default function GroupedRefundPage() {
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
                     <th className="py-2.5 px-4 w-72">THÔNG TIN RÚT</th>
                     <th className="py-2.5 px-4 w-48">SỐ TIỀN RÚT</th>
-                    <th className="py-2.5 px-4 w-60">
-                      THỜI GIAN (LỌC THEO PM)
-                    </th>
+                    <th className="py-2.5 px-4 w-60">THỜI GIAN</th>
                     <th className="py-2.5 px-4">GHI CHÚ</th>
                     <th className="py-2.5 px-4 text-center w-40">THAO TÁC</th>
                   </tr>
@@ -307,46 +339,47 @@ export default function GroupedRefundPage() {
                         </div>
                       </td>
 
-                      {/* THỜI GIAN - DÙNG MIN/MAX ĐỂ KHÓA GIỜ AM HOẶC PM */}
+                      {/* THỜI GIAN - DROPDOWN GIỜ VÀ CHỌN AM/PM */}
                       <td className="py-3 px-4 space-y-1">
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="time"
-                            value={cmd.time}
-                            /* GIỚI HẠN KHUNG GIỜ DỰA VÀO AM / PM */
-                            min={cmd.ampm === "PM" ? "12:00" : "00:00"}
-                            max={cmd.ampm === "PM" ? "23:59" : "11:59"}
-                            onChange={(e) =>
-                              handleTimeOrAmPmChange(
-                                group.userId,
-                                cmd.id,
-                                e.target.value,
-                                undefined,
-                              )
-                            }
-                            className="border border-slate-300 rounded px-1.5 py-1 font-medium outline-none focus:border-blue-500"
-                          />
+                    <div className="flex items-center gap-1">
+  {/* INPUT NHẬP GIỜ (Text format HH:mm) */}
+  <input
+    type="text"
+    placeholder="08:00"
+    maxLength={5}
+    value={cmd.time}
+    onChange={(e) =>
+      handleTimeOrAmPmChange(
+        group.userId,
+        cmd.id,
+        e.target.value,
+        undefined,
+      )
+    }
+    className="w-20 text-center border border-slate-300 bg-white rounded px-1.5 py-1 font-medium outline-none focus:border-blue-500"
+  />
 
-                          <select
-                            value={cmd.ampm}
-                            onChange={(e) =>
-                              handleTimeOrAmPmChange(
-                                group.userId,
-                                cmd.id,
-                                undefined,
-                                e.target.value as "AM" | "PM",
-                              )
-                            }
-                            className={`border rounded px-1.5 py-1 font-bold outline-none cursor-pointer ${
-                              cmd.ampm === "PM"
-                                ? "bg-amber-100 text-amber-800 border-amber-300"
-                                : "bg-sky-100 text-sky-800 border-sky-300"
-                            }`}
-                          >
-                            <option value="AM">AM (Sáng)</option>
-                            <option value="PM">PM (Chiều/Tối)</option>
-                          </select>
-                        </div>
+  {/* DROPDOWN CHỌN AM/PM GIỮ NGUYÊN */}
+  <select
+    value={cmd.ampm}
+    onChange={(e) =>
+      handleTimeOrAmPmChange(
+        group.userId,
+        cmd.id,
+        undefined,
+        e.target.value as "AM" | "PM",
+      )
+    }
+    className={`border rounded px-1.5 py-1 font-bold outline-none cursor-pointer ${
+      cmd.ampm === "PM"
+        ? "bg-amber-100 text-amber-800 border-amber-300"
+        : "bg-sky-100 text-sky-800 border-sky-300"
+    }`}
+  >
+    <option value="AM">AM (Sáng)</option>
+    <option value="PM">PM (Chiều/Tối)</option>
+  </select>
+</div>
 
                         <input
                           type="date"

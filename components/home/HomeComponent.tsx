@@ -24,7 +24,7 @@ export default function FlightBookingUI({
   return (
     <>
       {/* 1. Main Search Form Area */}
-      <main className="max-w-8xl mx-auto px-4 md:px-16 py-2 grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+      <main className="max-w-6xl mx-auto px-4 md:px-16 py-2 grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
         {/* Left Flight Search Box */}
         <FormBook />
 
@@ -89,7 +89,7 @@ export default function FlightBookingUI({
       </main>
 
       {/* 2. Bottom Section: Recent Orders & Contact */}
-      <section className="max-w-8xl mx-auto px-4 md:px-16 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 border-t mt-4 bg-white">
+      <section className="max-w-6xl mx-auto px-4 md:px-16 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 border-t mt-4">
         {/* Recent Bookings */}
         <div className="lg:col-span-6">
           <h3 className="font-bold text-gray-800 text-xs md:text-sm mb-4 uppercase tracking-wide">

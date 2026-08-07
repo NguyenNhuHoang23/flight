@@ -3,7 +3,7 @@ import { PhoneCall, Mail, MapPin, ShieldCheck, CreditCard, Clock } from "lucide-
 export default function Fooder() {
     return (
            <footer className="bg-[#1e293b] text-slate-300 pt-10 pb-6 mt-12 border-t border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           
           {/* Cột 1: Thông tin công ty / Thương hiệu */}
           <div className="space-y-3">
@@ -122,7 +122,7 @@ export default function Fooder() {
 
         {/* Bottom Line (Copyright) */}
         <div className="border-t border-slate-800 pt-6 mt-6 text-center text-xs text-slate-500">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>© {new Date().getFullYear()} Flight Booking System. All rights reserved.</p>
             <p className="flex items-center gap-1">
               <ShieldCheck className="w-4 h-4 text-emerald-500" />

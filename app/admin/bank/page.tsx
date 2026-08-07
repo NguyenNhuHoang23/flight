@@ -7,7 +7,6 @@ export interface BankAccount {
   bankName: string; // Tên ngân hàng (VD: MBBank, Vietcombank)
   accountHolder: string; // Tên chủ tài khoản
   accountNumber: string; // Số tài khoản
-  branch?: string; // Chi nhánh (không bắt buộc)
   isActive: boolean; // Trạng thái được chọn nhận tiền (Chỉ 1 cái true)
 }
 
@@ -17,7 +16,6 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
     bankName: "MBBank",
     accountHolder: "NGUYEN VAN A",
     accountNumber: "999988889999",
-    branch: "Hà Nội",
     isActive: true, // Tài khoản mặc định đang chọn
   },
   {
@@ -25,7 +23,6 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
     bankName: "Vietcombank",
     accountHolder: "NGUYEN VAN A",
     accountNumber: "1012345678",
-    branch: "TP. Hồ Chí Minh",
     isActive: false,
   },
   {
@@ -33,7 +30,6 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
     bankName: "Techcombank",
     accountHolder: "CONG TY TNHH ABC",
     accountNumber: "190333444555",
-    branch: "Đà Nẵng",
     isActive: false,
   },
 ];
@@ -91,7 +87,6 @@ export default function BankAccountListPage() {
       bankName: newBank.bankName,
       accountHolder: newBank.accountHolder.toUpperCase(),
       accountNumber: newBank.accountNumber,
-      branch: newBank.branch,
       isActive: accounts.length === 0, // Nếu chưa có TK nào thì tự active
     };
 
@@ -122,7 +117,7 @@ export default function BankAccountListPage() {
 
   return (
     <div className="min-h-screen p-6 font-sans text-slate-800">
-      <div className="max-w-8xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* TIÊU ĐỀ & NÚT THÊM */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -190,7 +185,6 @@ export default function BankAccountListPage() {
                   <th className="py-3.5 px-4">NGÂN HÀNG</th>
                   <th className="py-3.5 px-4">SỐ TÀI KHOẢN</th>
                   <th className="py-3.5 px-4">CHỦ TÀI KHOẢN</th>
-                  <th className="py-3.5 px-4">CHI NHÁNH</th>
                   <th className="py-3.5 px-4 text-center w-32">TRẠNG THÁI</th>
                   <th className="py-3.5 px-4 text-center w-24">THAO TÁC</th>
                 </tr>
@@ -230,11 +224,6 @@ export default function BankAccountListPage() {
                     {/* CHỦ TÀI KHOẢN */}
                     <td className="py-4 px-4 font-bold uppercase text-slate-800">
                       {acc.accountHolder}
-                    </td>
-
-                    {/* CHI NHÁNH */}
-                    <td className="py-4 px-4 text-slate-500 text-xs">
-                      {acc.branch || "—"}
                     </td>
 
                     {/* TRẠNG THÁI */}
@@ -353,21 +342,6 @@ export default function BankAccountListPage() {
                       setNewBank({ ...newBank, accountHolder: e.target.value })
                     }
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm uppercase"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Chi nhánh (Không bắt buộc)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="VD: Hà Nội, PGD Tân Bình..."
-                    value={newBank.branch}
-                    onChange={(e) =>
-                      setNewBank({ ...newBank, branch: e.target.value })
-                    }
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm"
                   />
                 </div>
 
