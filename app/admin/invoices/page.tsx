@@ -1,14 +1,31 @@
 "use client";
 
-import { Logo } from "@/components/layout/Logo";
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { Logo } from "./Logo";
+import PaymentInvoice from "./PaymentInvoice";
 
 const STORAGE_KEY = "saved_invoice_form_data";
 
+interface InvoiceFormData {
+  customerName: string;
+  customerPhone: string;
+  flightRoute: string;
+  invoiceNo: string;
+  bookingDate: string;
+  bankName: string;
+  accountHolder: string;
+  accountNumber: string;
+  transferContent: string;
+  amount: string;
+  hotline: string;
+  status: string;
+  qrImage?: string;
+}
+
 export default function CreateInvoicePage() {
-const qrViet = "https://img.vietqr.io/image/MB-0987654321-qr_only.png?accountName=NGUYEN%20VAN%20A";  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<InvoiceFormData>({
     customerName: "",
     customerPhone: "",
     flightRoute: "THANH TOÁN CHẶNG BAY ....",
@@ -18,19 +35,20 @@ const qrViet = "https://img.vietqr.io/image/MB-0987654321-qr_only.png?accountNam
     accountHolder: "TRUONG KIM NGOC ( Kế Toán)",
     accountNumber: "8107041423786",
     transferContent: "VN1553TicketJ0",
-    amount: "",
+    amount: "1500000",
     hotline: "0347.10.3333",
     status: "Chưa thanh toán",
+    qrImage: "",
   });
 
   const invoiceRef = useRef<HTMLDivElement>(null);
 
-  // Khôi phục dữ liệu đã lưu từ LocalStorage khi khởi tạo trang
+  // Khôi phục dữ liệu từ LocalStorage khi mount component
   useEffect(() => {
     const savedData = localStorage.getItem(STORAGE_KEY);
     if (savedData) {
       try {
-        setFormData(JSON.parse(savedData));
+        setFormData((prev) => ({ ...prev, ...JSON.parse(savedData) }));
       } catch (error) {
         console.error("Lỗi khi đọc dữ liệu từ LocalStorage:", error);
       }
@@ -42,24 +60,28 @@ const qrViet = "https://img.vietqr.io/image/MB-0987654321-qr_only.png?accountNam
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Xử lý upload ảnh QR
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, qrImage: imageUrl }));
+    if (name === "amount") {
+      // Chỉ giữ lại ký tự số khi nhập số tiền
+      const rawValue = value.replace(/\D/g, "");
+      setFormData((prev) => ({ ...prev, amount: rawValue }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  // Hàm in hóa đơn
-  const handlePrint = () => {
-    window.print();
+  // Xử lý upload ảnh QR tùy chỉnh
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, qrImage: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  // Hàm xử lý lưu hóa đơn và bắn Toast
+  // Hàm xử lý lưu hóa đơn
   const handleSave = () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
@@ -70,23 +92,34 @@ const qrViet = "https://img.vietqr.io/image/MB-0987654321-qr_only.png?accountNam
     }
   };
 
-  // Format tiền tệ hiển thị
+  // Format tiền tệ hiển thị (ví dụ: 1000000 -> 1.000.000)
   const formatAmount = (val: string) => {
-    if (!val) return "Nhập số tiền";
-    const num = Number(val.replace(/\D/g, ""));
+    if (!val) return "0";
+    const num = Number(val);
     return isNaN(num) ? "0" : num.toLocaleString("vi-VN");
   };
 
+  // Tạo URL VietQR tự động dựa trên thông tin ngân hàng & số tiền nếu người dùng không upload QR riêng
+  const getQrUrl = () => {
+    if (formData.qrImage) return formData.qrImage;
+    const bank = encodeURIComponent(formData.bankName || "MB");
+    const acc = encodeURIComponent(formData.accountNumber || "");
+    const name = encodeURIComponent(formData.accountHolder || "");
+    const amount = formData.amount || "0";
+    const memo = encodeURIComponent(formData.transferContent || "");
+    return `https://img.vietqr.io/image/${bank}-${acc}-qr_only.png?amount=${amount}&addInfo=${memo}&accountName=${name}`;
+  };
+
   return (
-    <div className="min-h-screen font-sans text-slate-800">
-      {/* Tiêu đề & Nút In (Ẩn khi thực hiện in) */}
-      <div className="max-w-full mx-auto mb-4 print:hidden flex items-center justify-between">
+    <div className="min-h-screen font-sans text-slate-800 p-4 bg-slate-50 print:bg-white print:p-0">
+      {/* Tiêu đề */}
+      <div className="max-w-full mb-4 print:hidden flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-900">Tạo Hóa Đơn</h1>
       </div>
 
       <div className="max-w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* CỘT BÊN TRÁI: FORM NHẬP THÔNG TIN (ẨN KHỎI BẢN IN) */}
-        <div className="lg:col-span-3 bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 text-xs print:hidden">
+        <div className="lg:col-span-3 bg-white p-2 rounded-md border border-slate-200 shadow-sm space-y-3 text-xs print:hidden">
           <h2 className="text-sm font-bold text-slate-900 mb-2 border-b pb-2">
             Thông Tin Đặt Vé
           </h2>
@@ -112,7 +145,7 @@ const qrViet = "https://img.vietqr.io/image/MB-0987654321-qr_only.png?accountNam
             <input
               type="text"
               name="customerPhone"
-              placeholder="Nhập sdt"
+              placeholder="Nhập SĐT"
               value={formData.customerPhone}
               onChange={handleChange}
               className="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
@@ -234,7 +267,7 @@ const qrViet = "https://img.vietqr.io/image/MB-0987654321-qr_only.png?accountNam
               type="text"
               name="amount"
               placeholder="Nhập số tiền"
-              value={formData.amount}
+              value={formatAmount(formData.amount)}
               onChange={handleChange}
               className="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500 font-bold text-red-600"
             />
@@ -252,171 +285,26 @@ const qrViet = "https://img.vietqr.io/image/MB-0987654321-qr_only.png?accountNam
               className="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
             />
           </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-4 rounded shadow transition cursor-pointer"
+            >
+              Lưu dữ liệu
+            </button>
+          </div>
         </div>
 
         {/* CỘT BÊN PHẢI: KHUNG XEM TRƯỚC HÓA ĐƠN (PRINTABLE) */}
-          <div
-            ref={invoiceRef}
-            className="lg:col-span-9 bg-[#f2f9f6] p-8 rounded-lg border-2 border-red-500 relative min-h-[550px] flex flex-col justify-between shadow-sm print:shadow-none print:border-none"
-          >
-{/* CON DẤU MÀU ĐỎ GIỐNG HỆT MẪU (SVG + INK FILTER) */}
-<div className="absolute -top-7 -right-3 z-10 w-36 h-36 pointer-events-none select-none transform rotate-[-12deg] opacity-90">
-<Image width={200} height={200} src="/images/company-stamp.png" alt="Company Stamp" />
-</div>
-
-            {/* HEADER HÓA ĐƠN */}
-            <div>
-              <div className="flex justify-between items-start mb-6 border-b border-slate-800 pb-2">
-                <Logo />
-                <h2 className="text-xl font-extrabold text-slate-900 tracking-wider uppercase pr-20">
-                  HÓA ĐƠN THANH TOÁN
-                </h2>
-              </div>
-
-              {/* KHU VỰC NỘI DUNG CHÍNH */}
-              <div className="grid grid-cols-12 gap-4 relative">
-                {/* THÔNG TIN BÊN TRÁI */}
-                <div className="col-span-7 space-y-3 text-xs z-10">
-                  <div>
-                    <span className="font-bold text-slate-800">
-                      Khách Hàng:
-                    </span>
-                    <div className="font-extrabold text-sm text-slate-900">
-                      {formData.customerName || "Khách hàng"}{" "}
-                      {formData.customerPhone
-                        ? `- ${formData.customerPhone}`
-                        : "- Điện thoại"}
-                    </div>
-                    <div className="text-[11px] text-slate-600 uppercase mt-0.5 font-medium">
-                      {formData.flightRoute}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-bold text-slate-800">Ngân Hàng:</span>
-                    <div className="text-slate-700 font-medium">
-                      {formData.bankName}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-bold text-slate-800">
-                      Chủ Tài Khoản:
-                    </span>
-                    <div className="text-slate-900 font-semibold">
-                      {formData.accountHolder}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-bold text-slate-800">
-                      Số Tài Khoản:
-                    </span>
-                    <div className="text-slate-900 font-bold text-sm">
-                      {formData.accountNumber}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-bold text-slate-800">Hotline:</span>
-                    <div className="text-slate-700 font-medium">
-                      {formData.hotline}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-bold text-slate-800">
-                      Nội Dung Chuyển Khoản:
-                    </span>
-                    <div className="text-slate-900 font-extrabold text-sm">
-                      {formData.transferContent}
-                    </div>
-                  </div>
-                </div>
-
-                {/* HÌNH ẢNH MÁY BAY LÀM NỀN / MINH HỌA */}
-                <div className="absolute left-[10%] top-[10%] w-[55%] pointer-events-none opacity-90">
-                  <img
-                    src="/images/may-bay-vector-png-09.png"
-                    alt="Airplane Illustration"
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-
-                {/* CỘT PHẢI: MÃ QR & TỔNG TIỀN */}
-                <div className="col-span-5 flex flex-col items-end justify-between z-10 text-right space-y-4">
-                  {/* Số hóa đơn, ngày, trạng thái */}
-                  <div className="text-[11px] space-y-0.5 text-slate-700">
-                    <div>
-                      Hóa đơn số:{" "}
-                      <span className="font-bold">{formData.invoiceNo}</span>
-                    </div>
-                    <div>
-                      Ngày đặt vé:{" "}
-                      <span className="font-medium">
-                        {formData.bookingDate}
-                      </span>
-                    </div>
-                    <div>
-                      Tình trạng:{" "}
-                      <span className="font-bold text-slate-900">
-                        {formData.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* KHU VỰC HIỂN THỊ MÃ QR CODE */}
-  <div className="w-full bg-orange-500 p-2.5 rounded-lg flex justify-center items-center max-w-[260px] shadow-sm">
-  {qrViet ? (
-    <img
-      src={qrViet}
-      alt="QR Code"
-      className="w-full h-auto max-h-[220px] object-contain rounded bg-white"
-    />
-  ) : (
-    <div className="bg-orange-500 text-white font-bold text-base py-6 px-4 rounded flex items-center justify-center gap-1.5 w-full">
-      <span className="bg-white text-orange-500 font-black text-sm px-1.5 py-0.5 rounded">
-        Viet
-      </span>
-      <span>QR</span>
-    </div>
-  )}
-</div>
-
-                  {/* KHUNG TỔNG THÀNH TOÁN */}
-                  <div className="border border-red-400 bg-white px-3 py-2 rounded text-xs font-bold w-full max-w-[220px] flex items-center justify-between whitespace-nowrap">
-                    <span className="text-slate-800">Tổng thanh toán:</span>{" "}
-                    <span className="text-red-600 font-extrabold">
-                      {formatAmount(formData.amount)} VNĐ
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* LƯU Ý BÊN DƯỚI */}
-              <div className="mt-8 text-[11px] italic text-red-600">
-                Chú ý: Thanh toán tiền vé ghi đúng nội dung, ký tự chuyển khoản
-                hệ thống cung cấp tránh xảy ra lỗi
-              </div>
-            </div>
-
-            {/* FOOTER HÓA ĐƠN */}
-            <div className="mt-8 text-center border-t border-slate-300 pt-3">
-              <span className="font-extrabold text-slate-900 text-xs tracking-wider uppercase">
-                CẢM ƠN QUÝ KHÁCH
-              </span>
-            </div>
+        <div className="lg:col-span-9 flex flex-col items-center">
+          <PaymentInvoice
+            formData={formData}
+            formatAmount={formatAmount}
+            getQrUrl={getQrUrl}
+          />
         </div>
-      </div>
-
-      {/* NÚT LƯU LẠI */}
-      <div className="max-w-full mt-4 print:hidden">
-        <button
-          onClick={handleSave}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-4 rounded shadow transition cursor-pointer"
-        >
-          Lưu lại
-        </button>
       </div>
     </div>
   );

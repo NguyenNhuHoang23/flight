@@ -1,26 +1,21 @@
 "use client";
+
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Phone,
   ArrowRightLeft,
   Calendar,
   User,
   Search,
-  List,
-  Home,
-  MessageSquare,
-  MapPin,
-  Monitor,
-  RefreshCw,
   X,
   Loader2,
+  Plane,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useFlightSearch } from "@/hook/useFlightSearch";
 
-// Helper bỏ dấu tiếng Việt để search tiếng Việt không dấu chuẩn hơn
+// Helper bỏ dấu tiếng Việt để tìm kiếm không dấu chuẩn xác
 const removeVietnameseTones = (str: string) => {
   return str
     .normalize("NFD")
@@ -172,8 +167,15 @@ export default function FormBook() {
   const [adt, setAdt] = useState(1);
   const [chd, setChd] = useState(0);
   const [inf, setInf] = useState(0);
+
   const router = useRouter();
   const { searchFlight, loading, error } = useFlightSearch();
+
+  const [activeSelectType, setActiveSelectType] = useState<
+    "origin" | "destination" | null
+  >(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getLunarDateString = (date: Date | null) => {
     if (!date) return "";
@@ -203,12 +205,6 @@ export default function FormBook() {
     }
   };
 
-  const [activeSelectType, setActiveSelectType] = useState<
-    "origin" | "destination" | null
-  >(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -218,8 +214,19 @@ export default function FormBook() {
         setActiveSelectType(null);
       }
     }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setActiveSelectType(null);
+      }
+    }
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const handleSwapLocations = (e: React.MouseEvent) => {
@@ -261,7 +268,7 @@ export default function FormBook() {
     }
   };
 
-  // Logic lọc theo ký tự đầu, mã ID, tên không dấu & chữ cái đầu tên
+  // Logic lọc airport nâng cao
   const filteredAirportData = AIRPORT_DATA.map((cat) => ({
     ...cat,
     airports: cat.airports.filter((ap) => {
@@ -279,13 +286,9 @@ export default function FormBook() {
       const cleanName = removeVietnameseTones(ap.name);
       const cleanId = ap.id.toLowerCase();
 
-      // 1. Khớp mã sân bay (VD: HAN, SGN)
       const matchesId = cleanId.includes(cleanQuery);
-
-      // 2. Tên chứa từ khóa
       const matchesName = cleanName.includes(cleanQuery);
 
-      // 3. Khớp các chữ cái đầu từ (VD: "hn" -> "Hà Nội", "hcm" -> "Hồ Chí Minh")
       const initials = cleanName
         .split(/[\s(),]+/)
         .map((word) => word[0])
@@ -297,15 +300,17 @@ export default function FormBook() {
   })).filter((cat) => cat.airports.length > 0);
 
   return (
-    <div className="lg:col-span-7 bg-[#e9ecef] p-4 rounded border border-gray-300 shadow-sm relative">
-      <h2 className="text-gray-700 font-bold text-sm md:text-base mb-3 uppercase tracking-wide">
+    <div className="lg:col-span-7 bg-[#e9ecef] p-4 rounded-xl border border-slate-300 shadow-xs relative font-sans">
+      <h2 className="text-slate-700 font-bold text-sm md:text-base mb-3 uppercase tracking-wide">
         ĐẶT VÉ MÁY BAY NỘI ĐỊA, QUỐC TẾ
       </h2>
+
       <div className="space-y-3">
         {/* Origin & Destination Group */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center relative">
+          {/* Nơi đi */}
           <div className="md:col-span-5">
-            <label className="block text-xs font-semibold mb-1 text-gray-600">
+            <label className="block text-xs font-semibold mb-1 text-slate-600">
               Khởi hành từ
             </label>
             <div
@@ -315,30 +320,31 @@ export default function FormBook() {
               }}
               className="relative cursor-pointer"
             >
-              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-500">
-                ✈
-              </span>
+              <Plane className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 readOnly
                 value={fromLocation}
-                className="w-full pl-8 pr-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none cursor-pointer"
+                className="w-full pl-8 pr-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium focus:outline-none cursor-pointer"
               />
             </div>
           </div>
 
-          <div className="md:col-span-2 flex justify-center pt-2 md:pt-4">
+          {/* Swap Button */}
+          <div className="md:col-span-2 flex justify-center pt-1 md:pt-4">
             <button
+              type="button"
               onClick={handleSwapLocations}
-              title="Đổi chiều"
-              className="p-1.5 rounded-full border border-gray-300 bg-white hover:bg-gray-100 text-gray-600 transition shadow-sm"
+              title="Đổi chiều bay"
+              className="p-2 rounded-full border border-slate-300 bg-white hover:bg-slate-100 active:scale-95 text-indigo-600 transition shadow-xs cursor-pointer"
             >
-              <ArrowRightLeft className="w-4 h-4 text-blue-500" />
+              <ArrowRightLeft className="w-4 h-4" />
             </button>
           </div>
 
+          {/* Nơi đến */}
           <div className="md:col-span-5">
-            <label className="block text-xs font-semibold mb-1 text-gray-600">
+            <label className="block text-xs font-semibold mb-1 text-slate-600">
               Điểm đến
             </label>
             <div
@@ -348,236 +354,329 @@ export default function FormBook() {
               }}
               className="relative cursor-pointer"
             >
-              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-500">
-                ✈
-              </span>
+              <Plane className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none rotate-90" />
               <input
                 type="text"
                 readOnly
                 value={toLocation}
-                className="w-full pl-8 pr-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none cursor-pointer"
+                className="w-full pl-8 pr-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium focus:outline-none cursor-pointer"
               />
             </div>
           </div>
 
-          {/* Modal / Dropdown thu gọn */}
+          {/* MODAL / DROPDOWN SELECT AIRPORT */}
           {activeSelectType && (
-<div
-  ref={dropdownRef}
-  className={`fixed inset-0 z-50 bg-white md:absolute md:inset-auto md:top-[50px] ${
-    activeSelectType === "destination"
-      ? "md:right-0 md:left-auto"
-      : "md:left-0 md:right-auto"
-  } md:w-full md:max-w-5xl md:rounded-none md:shadow-xl overflow-hidden text-xs flex flex-col`}
->
-  {/* 1. Header Modal */}
-  <div className="bg-[#006837] text-white px-3 py-1 flex justify-between items-center font-bold">
-    <h3 className={`text-xs tracking-wide uppercase`}>
-      {activeSelectType === "origin" ? "CHỌN ĐIỂM ĐI" : "CHỌN ĐIỂM ĐẾN"}
-    </h3>
-    <button
-      onClick={() => setActiveSelectType(null)}
-      className="text-red-500 hover:text-red-400 font-bold text-sm leading-none"
-    >
-      ✕
-    </button>
-  </div>
-
-  {/* 2. Bar Tìm kiếm (Đã chống zoom mobile & giống hệt ảnh) */}
-  <div className="bg-[#f0f0f0] px-4 py-2 border-b border-gray-200 flex items-center justify-center gap-2">
-    <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-      Tìm kiếm:
-    </span>
-    <div className="relative flex items-center">
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Nhập mã sân bay; tên sân bay, thành phố, nước"
-        // text-base md:text-xs để chặn iOS/Android auto-zoom
-        className="w-[340px] px-2.5 py-1 bg-white border border-gray-300 rounded-none text-base md:text-xs focus:outline-none focus:border-green-600 placeholder:text-gray-400"
-        autoFocus
-      />
-      <button className="ml-2 text-[#f2542d] hover:opacity-80">
-        <Search className="w-5 h-5 stroke-[2.5]" />
-      </button>
-    </div>
-  </div>
-
-  {/* 3. Content 6 Cột chuẩn Layout ảnh */}
-  <div className="p-4 max-h-[420px] overflow-y-auto bg-white">
-    {filteredAirportData.length === 0 ? (
-      <div className="text-center py-6 text-gray-500 text-xs">
-        Không tìm thấy sân bay phù hợp với "{searchQuery}"
-      </div>
-    ) : searchQuery.trim() !== "" ? (
-      /* Khi có Tuỳ chọn Tìm kiếm: Hiển thị Grid linh hoạt */
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-4 gap-y-3">
-        {filteredAirportData.map((category, idx) => (
-          <div key={idx} className="space-y-1">
-            <h4 className="text-[#d84315] font-bold text-[11px] uppercase tracking-tight">
-              {category.title}
-            </h4>
-            <ul className="space-y-0.5 text-[11px] leading-tight text-gray-600">
-              {category.airports.map((airport) => (
-                <li
-                  key={airport.id}
-                  onClick={() => handleSelectAirport(airport.name)}
-                  className="hover:text-[#006837] hover:underline cursor-pointer transition py-0.5"
+            <div
+              ref={dropdownRef}
+              className={`fixed inset-0 z-50 bg-white md:absolute md:inset-auto md:top-[68px] ${
+                activeSelectType === "destination"
+                  ? "md:right-0 md:left-auto"
+                  : "md:left-0 md:right-auto"
+              } md:w-full md:max-w-5xl md:rounded-xl md:shadow-2xl border border-slate-200 overflow-hidden text-xs flex flex-col`}
+            >
+              {/* Header Modal */}
+              <div className="bg-[#006838] text-white px-4 py-2.5 flex justify-between items-center font-bold">
+                <h3 className="text-xs uppercase tracking-wider">
+                  {activeSelectType === "origin"
+                    ? "CHỌN SÂN BAY KHỞI HÀNH"
+                    : "CHỌN SÂN BAY ĐẾN"}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setActiveSelectType(null)}
+                  className="p-1 hover:bg-white/10 rounded-full text-white transition cursor-pointer"
                 >
-                  {airport.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    ) : (
-      /* Khi Mặc định (Không search): Ghép Cột Y Hệt Như Trong Ảnh */
-      <div className="grid grid-cols-6 gap-x-4 text-[11px] leading-tight text-gray-600">
-        {/* Cột 1: Miền Bắc & Miền Trung */}
-        <div className="space-y-3">
-          {AIRPORT_DATA.find((c) => c.title === "MIỀN BẮC") && (
-            <div>
-              <h4 className="text-[#d84315] font-bold uppercase mb-1">MIỀN BẮC</h4>
-              <ul className="space-y-1">
-                {AIRPORT_DATA.find((c) => c.title === "MIỀN BẮC")?.airports.map((ap) => (
-                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                    {ap.name}
-                  </li>
-                ))}
-              </ul>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-center gap-2">
+                <span className="text-xs font-semibold text-slate-700 whitespace-nowrap hidden sm:inline">
+                  Tìm kiếm:
+                </span>
+                <div className="relative flex-1 sm:flex-none sm:w-[380px] flex items-center">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Nhập mã sân bay, tên thành phố..."
+                    className="w-full pl-3 pr-8 py-1.5 bg-white border border-slate-300 rounded-lg text-base md:text-xs focus:outline-none focus:ring-2 focus:ring-[#006838]"
+                    autoFocus
+                  />
+                  {searchQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <Search className="w-4 h-4 text-slate-400 absolute right-2.5 pointer-events-none" />
+                  )}
+                </div>
+              </div>
+
+              {/* Airport Grid Content */}
+              <div className="p-4 max-h-[70vh] md:max-h-[420px] overflow-y-auto bg-white">
+                {filteredAirportData.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500 text-xs">
+                    Không tìm thấy sân bay phù hợp với "{searchQuery}"
+                  </div>
+                ) : searchQuery.trim() !== "" ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-4 gap-y-3">
+                    {filteredAirportData.map((category, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <h4 className="text-[#d84315] font-bold text-[11px] uppercase tracking-tight">
+                          {category.title}
+                        </h4>
+                        <ul className="space-y-1 text-[11px] text-slate-600">
+                          {category.airports.map((airport) => (
+                            <li
+                              key={airport.id}
+                              onClick={() => handleSelectAirport(airport.name)}
+                              className="hover:text-[#006838] hover:underline cursor-pointer transition py-0.5"
+                            >
+                              {airport.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-4 gap-y-4 text-[11px] leading-relaxed text-slate-600">
+                    {/* Cột 1: Bắc + Trung */}
+                    <div className="space-y-3">
+                      {AIRPORT_DATA.find((c) => c.title === "MIỀN BẮC") && (
+                        <div>
+                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                            MIỀN BẮC
+                          </h4>
+                          <ul className="space-y-1">
+                            {AIRPORT_DATA.find(
+                              (c) => c.title === "MIỀN BẮC",
+                            )?.airports.map((ap) => (
+                              <li
+                                key={ap.id}
+                                onClick={() => handleSelectAirport(ap.name)}
+                                className="hover:text-[#006838] cursor-pointer"
+                              >
+                                {ap.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {AIRPORT_DATA.find((c) => c.title === "MIỀN TRUNG") && (
+                        <div>
+                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                            MIỀN TRUNG
+                          </h4>
+                          <ul className="space-y-1">
+                            {AIRPORT_DATA.find(
+                              (c) => c.title === "MIỀN TRUNG",
+                            )?.airports.map((ap) => (
+                              <li
+                                key={ap.id}
+                                onClick={() => handleSelectAirport(ap.name)}
+                                className="hover:text-[#006838] cursor-pointer"
+                              >
+                                {ap.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cột 2: Nam */}
+                    <div>
+                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                        MIỀN NAM
+                      </h4>
+                      <ul className="space-y-1">
+                        {AIRPORT_DATA.find(
+                          (c) => c.title === "MIỀN NAM",
+                        )?.airports.map((ap) => (
+                          <li
+                            key={ap.id}
+                            onClick={() => handleSelectAirport(ap.name)}
+                            className="hover:text-[#006838] cursor-pointer"
+                          >
+                            {ap.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Cột 3: ĐNÁ + Úc */}
+                    <div className="space-y-3">
+                      {AIRPORT_DATA.find(
+                        (c) => c.title === "ĐÔNG NAM Á + ÚC",
+                      ) && (
+                        <div>
+                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                            ĐÔNG NAM Á + ÚC
+                          </h4>
+                          <ul className="space-y-1">
+                            {AIRPORT_DATA.find(
+                              (c) => c.title === "ĐÔNG NAM Á + ÚC",
+                            )?.airports.map((ap) => (
+                              <li
+                                key={ap.id}
+                                onClick={() => handleSelectAirport(ap.name)}
+                                className="hover:text-[#006838] cursor-pointer"
+                              >
+                                {ap.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {AIRPORT_DATA.find((c) => c.title === "CHÂU ÚC") && (
+                        <div>
+                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                            CHÂU ÚC
+                          </h4>
+                          <ul className="space-y-1">
+                            {AIRPORT_DATA.find(
+                              (c) => c.title === "CHÂU ÚC",
+                            )?.airports.map((ap) => (
+                              <li
+                                key={ap.id}
+                                onClick={() => handleSelectAirport(ap.name)}
+                                className="hover:text-[#006838] cursor-pointer"
+                              >
+                                {ap.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cột 4: Đông Bắc Á */}
+                    <div>
+                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                        ĐÔNG BẮC Á
+                      </h4>
+                      <ul className="space-y-1">
+                        {AIRPORT_DATA.find(
+                          (c) => c.title === "ĐÔNG BẮC Á",
+                        )?.airports.map((ap) => (
+                          <li
+                            key={ap.id}
+                            onClick={() => handleSelectAirport(ap.name)}
+                            className="hover:text-[#006838] cursor-pointer"
+                          >
+                            {ap.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Cột 5: Châu Âu */}
+                    <div>
+                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                        CHÂU ÂU
+                      </h4>
+                      <ul className="space-y-1">
+                        {AIRPORT_DATA.find(
+                          (c) => c.title === "CHÂU ÂU",
+                        )?.airports.map((ap) => (
+                          <li
+                            key={ap.id}
+                            onClick={() => handleSelectAirport(ap.name)}
+                            className="hover:text-[#006838] cursor-pointer"
+                          >
+                            {ap.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Cột 6: Châu Mỹ */}
+                    <div>
+                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                        CHÂU MỸ
+                      </h4>
+                      <ul className="space-y-1">
+                        {AIRPORT_DATA.find(
+                          (c) => c.title === "CHÂU MỸ",
+                        )?.airports.map((ap) => (
+                          <li
+                            key={ap.id}
+                            onClick={() => handleSelectAirport(ap.name)}
+                            className="hover:text-[#006838] cursor-pointer"
+                          >
+                            {ap.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          {AIRPORT_DATA.find((c) => c.title === "MIỀN TRUNG") && (
-            <div>
-              <h4 className="text-[#d84315] font-bold uppercase mb-1">MIỀN TRUNG</h4>
-              <ul className="space-y-1">
-                {AIRPORT_DATA.find((c) => c.title === "MIỀN TRUNG")?.airports.map((ap) => (
-                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                    {ap.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        {/* Cột 2: Miền Nam */}
-        <div>
-          <h4 className="text-[#d84315] font-bold uppercase mb-1">MIỀN NAM</h4>
-          <ul className="space-y-1">
-            {AIRPORT_DATA.find((c) => c.title === "MIỀN NAM")?.airports.map((ap) => (
-              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                {ap.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Cột 3: Đông Nam Á + Úc & Châu Úc */}
-        <div className="space-y-3">
-          {AIRPORT_DATA.find((c) => c.title === "ĐÔNG NAM Á + ÚC") && (
-            <div>
-              <h4 className="text-[#d84315] font-bold uppercase mb-1">ĐÔNG NAM Á + ÚC</h4>
-              <ul className="space-y-1">
-                {AIRPORT_DATA.find((c) => c.title === "ĐÔNG NAM Á + ÚC")?.airports.map((ap) => (
-                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                    {ap.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {AIRPORT_DATA.find((c) => c.title === "CHÂU ÚC") && (
-            <div>
-              <h4 className="text-[#d84315] font-bold uppercase mb-1">CHÂU ÚC</h4>
-              <ul className="space-y-1">
-                {AIRPORT_DATA.find((c) => c.title === "CHÂU ÚC")?.airports.map((ap) => (
-                  <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                    {ap.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        {/* Cột 4: Đông Bắc Á */}
-        <div>
-          <h4 className="text-[#d84315] font-bold uppercase mb-1">ĐÔNG BẮC Á</h4>
-          <ul className="space-y-1">
-            {AIRPORT_DATA.find((c) => c.title === "ĐÔNG BẮC Á")?.airports.map((ap) => (
-              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                {ap.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Cột 5: Châu Âu */}
-        <div>
-          <h4 className="text-[#d84315] font-bold uppercase mb-1">CHÂU ÂU</h4>
-          <ul className="space-y-1">
-            {AIRPORT_DATA.find((c) => c.title === "CHÂU ÂU")?.airports.map((ap) => (
-              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                {ap.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Cột 6: Châu Mỹ */}
-        <div>
-          <h4 className="text-[#d84315] font-bold uppercase mb-1">CHÂU MỸ</h4>
-          <ul className="space-y-1">
-            {AIRPORT_DATA.find((c) => c.title === "CHÂU MỸ")?.airports.map((ap) => (
-              <li key={ap.id} onClick={() => handleSelectAirport(ap.name)} className="hover:text-[#006837] cursor-pointer">
-                {ap.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    )}
-  </div>
-</div>
           )}
         </div>
 
         {/* Date Pickers */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Ngày đi */}
           <div>
-            <label className="block text-xs font-semibold mb-1 text-gray-600">
+            <label className="block text-xs font-semibold mb-1 text-slate-600">
               Ngày đi
             </label>
+
             <div className="relative flex items-center">
               <DatePicker
                 selected={departureDate}
                 onChange={(date: Date | null) => {
                   setDepartureDate(date);
+
                   if (date && returnDate && date > returnDate) {
                     setReturnDate(null);
                   }
                 }}
                 minDate={new Date()}
                 dateFormat="dd/MM/yyyy"
-                className="w-full pl-8 pr-24 py-1.5 bg-white border border-gray-300 rounded text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full pl-8 pr-24 py-2 bg-white border border-slate-300 rounded-lg text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 wrapperClassName="w-full"
               />
-              <Calendar className="w-4 h-4 text-gray-500 absolute left-2.5 pointer-events-none z-10" />
+
+              <Calendar className="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none z-10" />
+
               {departureDate && (
-                <span className="absolute right-2 text-[10px] md:text-xs text-gray-500 bg-gray-50 px-1 border-l pointer-events-none z-10">
+                <span className="absolute right-2 text-[10px] md:text-xs text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border-l pointer-events-none z-10">
                   {getLunarDateString(departureDate)}
                 </span>
               )}
             </div>
           </div>
-
+          {/* Ngày về */}
           <div>
-            <label className="block text-xs font-semibold mb-1 text-gray-600">
-              Ngày về
-            </label>
+            <div className="flex items-center justify-between gap-2">
+              {" "}
+              <label className="block text-xs font-semibold mb-1 text-slate-600">
+                {" "}
+                Ngày về{" "}
+              </label>{" "}
+              {returnDate && (
+                <button
+                  type="button"
+                  onClick={() => setReturnDate(null)}
+                  title="Bỏ chọn ngày về"
+                  className="flex items-center gap-1 mb-1 text-xs text-red-500 hover:text-red-600 transition cursor-pointer"
+                >
+                  {" "}
+                  <span>Bỏ chọn ngày về</span> <X className="w-4 h-4" />
+                </button>
+              )}{" "}
+            </div>
+
             <div className="relative flex items-center">
               <DatePicker
                 selected={returnDate}
@@ -585,12 +684,16 @@ export default function FormBook() {
                 minDate={departureDate || new Date()}
                 placeholderText="Chọn ngày"
                 dateFormat="dd/MM/yyyy"
-                className="w-full pl-8 pr-20 py-1.5 bg-white border border-gray-300 rounded text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full pl-8 pr-20 py-2 bg-white border border-slate-300 rounded-lg text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 wrapperClassName="w-full"
               />
-              <Calendar className="w-4 h-4 text-gray-500 absolute left-2.5 pointer-events-none z-10" />
+
+              {/* Icon lịch */}
+              <Calendar className="w-4 h-4 text-slate-400 absolute left-2.5 pointer-events-none z-10" />
+
+              {/* Ngày âm lịch */}
               {returnDate && (
-                <span className="absolute right-2 text-[10px] md:text-xs text-gray-500 bg-gray-50 px-1 border-l pointer-events-none z-10">
+                <span className="absolute right-8 text-[10px] md:text-xs text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border-l pointer-events-none z-10">
                   {getLunarDateString(returnDate)}
                 </span>
               )}
@@ -598,89 +701,95 @@ export default function FormBook() {
           </div>
         </div>
 
-        {/* Passenger Counts */}
+        {/* Số lượng hành khách */}
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-xs font-semibold mb-1 text-gray-600">
+            <label className="block text-xs font-semibold mb-1 text-slate-600">
               Người lớn{" "}
-              <span className="text-red-500 font-normal">(≥ 12 tuổi)</span>
+              <span className="text-rose-500 font-normal">(≥ 12t)</span>
             </label>
             <div className="relative">
-              <User className="w-4 h-4 text-gray-500 absolute left-2 top-2 pointer-events-none" />
+              <User className="w-4 h-4 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
                 value={adt}
                 onChange={(e) => setAdt(Number(e.target.value))}
-                className="w-full pl-7 pr-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:outline-none"
+                className="w-full pl-7 pr-2 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600"
               >
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1 text-gray-600">
-              Trẻ em{" "}
-              <span className="text-red-500 font-normal">(2-12 tuổi)</span>
+            <label className="block text-xs font-semibold mb-1 text-slate-600">
+              Trẻ em <span className="text-rose-500 font-normal">(2-12t)</span>
             </label>
             <div className="relative">
-              <User className="w-4 h-4 text-gray-500 absolute left-2 top-2 pointer-events-none" />
+              <User className="w-4 h-4 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
                 value={chd}
                 onChange={(e) => setChd(Number(e.target.value))}
-                className="w-full pl-7 pr-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:outline-none"
+                className="w-full pl-7 pr-2 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600"
               >
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1 text-gray-600">
-              Em bé{" "}
-              <span className="text-red-500 font-normal">(&lt; 2 tuổi)</span>
+            <label className="block text-xs font-semibold mb-1 text-slate-600">
+              Em bé <span className="text-rose-500 font-normal">(&lt; 2t)</span>
             </label>
             <div className="relative">
-              <User className="w-4 h-4 text-gray-500 absolute left-2 top-2 pointer-events-none" />
+              <User className="w-4 h-4 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
                 value={inf}
                 onChange={(e) => setInf(Number(e.target.value))}
-                className="w-full pl-7 pr-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:outline-none"
+                className="w-full pl-7 pr-2 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600"
               >
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
         </div>
 
         {error && (
-          <div className="text-red-500 text-xs mt-1 font-semibold">{error}</div>
+          <div className="text-rose-600 text-xs mt-1 font-semibold">
+            {error}
+          </div>
         )}
 
-        {/* Submit Button */}
+        {/* Nút Tìm Chuyến Bay */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-3 gap-4">
           <button
+            type="button"
             onClick={handleSearchSubmit}
             disabled={loading}
-            className="w-full sm:w-auto px-8 py-2.5 bg-[#f2542d] hover:bg-[#e0431c] disabled:bg-gray-400 text-white font-bold rounded flex items-center justify-center space-x-2 shadow uppercase tracking-wide transition cursor-pointer"
+            className="w-full sm:w-auto px-8 py-3 bg-[#f2542d] hover:bg-[#e0431c] active:scale-98 disabled:bg-slate-400 text-white font-bold rounded-xl flex items-center justify-center space-x-2 shadow-md uppercase tracking-wider transition cursor-pointer"
           >
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-base">ĐANG TÌM CHUYẾN BAY...</span>
+                <span className="text-sm sm:text-base">
+                  ĐANG TÌM CHUYẾN BAY...
+                </span>
               </>
             ) : (
               <>
                 <Search className="w-5 h-5" />
-                <span className="text-base">TÌM CHUYẾN BAY</span>
+                <span className="text-sm sm:text-base">TÌM CHUYẾN BAY</span>
               </>
             )}
           </button>

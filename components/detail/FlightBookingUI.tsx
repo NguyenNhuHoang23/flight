@@ -8,25 +8,64 @@ import { ApiRootResponse } from "./flight-types";
 import { FlightHeader } from "./FlightHeader";
 import { FlightList } from "./FlightList";
 import { FlightSidebar } from "./FlightSidebar";
-
+import { useAirlineDiscounts } from "@/hook/useAirlineDiscounts";
 export const FlightBookingHome: React.FC = () => {
   const params = useParams();
   const router = useRouter();
+  const {
+    data: airlineDiscountResult,
+    isLoading: isLoadingDiscount,
+    error: discountError,
+    refetch: refetchDiscount,
+  } = useAirlineDiscounts();
 
+  const getAirlineDiscount = (airlineCode?: string) => {
+    if (!airlineDiscountResult) return 0;
+
+    const airline = airlineDiscountResult.airlines?.find(
+      (item: any) => item.code?.toUpperCase() === airlineCode?.toUpperCase(),
+    );
+
+    if (airline) {
+      return Number(airline.discountPercent) || 0;
+    }
+
+    return Number(airlineDiscountResult.defaultDiscount) || 0;
+  };
+
+  const calculateDiscountedPrice = (
+    originalPrice: number,
+    discountPercent: number,
+  ) => {
+    const price = Number(originalPrice) || 0;
+    const discount = Number(discountPercent) || 0;
+
+    return Math.round(price - (price * discount) / 100);
+  };
   const rawId = params?.id ? String(params.id).replace(".htm", "") : "";
 
-  const [rawApiResponse, setRawApiResponse] = useState<ApiRootResponse | null>(null);
+  const [rawApiResponse, setRawApiResponse] = useState<ApiRootResponse | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingDate, setIsFetchingDate] = useState(false);
   const [showTotalPrice, setShowTotalPrice] = useState(false);
 
-  const [selectedDepartFlight, setSelectedDepartFlight] = useState<any | null>(null);
-  const [selectedReturnFlight, setSelectedReturnFlight] = useState<any | null>(null);
+  const [selectedDepartFlight, setSelectedDepartFlight] = useState<any | null>(
+    null,
+  );
+  const [selectedReturnFlight, setSelectedReturnFlight] = useState<any | null>(
+    null,
+  );
 
   // STATE EXPAND DÀNH CHO CÁC MÀN HÌNH MỞ CỦA TỪNG CHIỀU
   const [expandedIndices, setExpandedIndices] = useState<number[]>([]);
-  const [departExpandedIndices, setDepartExpandedIndices] = useState<number[]>([]);
-  const [returnExpandedIndices, setReturnExpandedIndices] = useState<number[]>([]);
+  const [departExpandedIndices, setDepartExpandedIndices] = useState<number[]>(
+    [],
+  );
+  const [returnExpandedIndices, setReturnExpandedIndices] = useState<number[]>(
+    [],
+  );
 
   const [departDate, setDepartDate] = useState<Date>(new Date());
   const [returnDate, setReturnDate] = useState<Date | null>(null);
@@ -43,7 +82,11 @@ export const FlightBookingHome: React.FC = () => {
     if (dateStr.includes("/")) {
       const parts = dateStr.split(" ")[0].split("/");
       if (parts.length === 3) {
-        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        return new Date(
+          Number(parts[2]),
+          Number(parts[1]) - 1,
+          Number(parts[0]),
+        );
       }
     }
     if (/^\d{8}$/.test(dateStr)) {
@@ -60,7 +103,9 @@ export const FlightBookingHome: React.FC = () => {
   const isRoundTrip = groups.length >= 2;
 
   useEffect(() => {
-    const storageKey = rawId ? `flight_search_${rawId}` : "flight_search_result";
+    const storageKey = rawId
+      ? `flight_search_${rawId}`
+      : "flight_search_result";
     const storedData = sessionStorage.getItem(storageKey);
 
     if (storedData) {
@@ -77,24 +122,35 @@ export const FlightBookingHome: React.FC = () => {
         console.error("Lỗi parse JSON session storage:", error);
       }
     }
+
+    // ĐỌC LẠI CHUYẾN BAY ĐÃ CHỌN TỪ SESSION STORAGE (NẾU CÓ Quay LẠI ĐẶT LẠI)
+    try {
+      const savedDepart = sessionStorage.getItem("selected_depart_flight");
+      const savedReturn = sessionStorage.getItem("selected_return_flight");
+      if (savedDepart) setSelectedDepartFlight(JSON.parse(savedDepart));
+      if (savedReturn) setSelectedReturnFlight(JSON.parse(savedReturn));
+    } catch (e) {
+      console.error("Lỗi đọc thông tin chuyến bay đã chọn:", e);
+    }
+
     setIsLoading(false);
   }, [rawId]);
 
   const toggleExpand = (index: number) => {
     setExpandedIndices((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   };
 
   const toggleDepartExpand = (index: number) => {
     setDepartExpandedIndices((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   };
 
   const toggleReturnExpand = (index: number) => {
     setReturnExpandedIndices((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   };
 
@@ -139,6 +195,12 @@ export const FlightBookingHome: React.FC = () => {
     setReturnExpandedIndices([]);
     setExpandedIndices([]);
 
+    // Khi đổi ngày tìm kiếm, reset chuyến bay đã chọn
+    setSelectedDepartFlight(null);
+    setSelectedReturnFlight(null);
+    sessionStorage.removeItem("selected_depart_flight");
+    sessionStorage.removeItem("selected_return_flight");
+
     const payload = {
       Adt: currentDepartGroup.Adt || 1,
       Chd: currentDepartGroup.Chd || 0,
@@ -153,8 +215,14 @@ export const FlightBookingHome: React.FC = () => {
         },
         {
           Leg: 1,
-          StartPoint: currentReturnGroup?.StartPoint || currentDepartGroup.EndPoint || "HAN",
-          EndPoint: currentReturnGroup?.EndPoint || currentDepartGroup.StartPoint || "SGN",
+          StartPoint:
+            currentReturnGroup?.StartPoint ||
+            currentDepartGroup.EndPoint ||
+            "HAN",
+          EndPoint:
+            currentReturnGroup?.EndPoint ||
+            currentDepartGroup.StartPoint ||
+            "SGN",
           DepartDate: formatDateToDDMMYYYY(newReturnDate),
         },
       ],
@@ -181,7 +249,9 @@ export const FlightBookingHome: React.FC = () => {
       setDepartDate(newDepartDate);
       setReturnDate(newReturnDate);
 
-      const storageKey = rawId ? `flight_search_${rawId}` : "flight_search_result";
+      const storageKey = rawId
+        ? `flight_search_${rawId}`
+        : "flight_search_result";
       sessionStorage.setItem(storageKey, JSON.stringify(newData));
     } catch (error) {
       console.error("Lỗi khi search vé khứ hồi:", error);
@@ -227,26 +297,44 @@ export const FlightBookingHome: React.FC = () => {
     searchRoundTrip(currentDepartDate, selected);
   };
 
-  // Chọn chuyến bay trực tiếp khi click vào item
+  // CHỌN CHUYẾN BAY VÀ XỬ LÝ LƯU SESSION STORAGE CỐ ĐỊNH 1 KEY
   const handleSelectFlight = (flight: any, direction: "depart" | "return") => {
     if (!isRoundTrip) {
+      // Một chiều: Ghi đè duy nhất vào 'selected_depart_flight'
       sessionStorage.setItem("selected_depart_flight", JSON.stringify(flight));
+      sessionStorage.removeItem("selected_return_flight");
       router.push("/flight/passenger");
       return;
     }
 
     if (direction === "depart") {
       setSelectedDepartFlight(flight);
+      // Ghi đè vào duy nhất key 'selected_depart_flight'
       sessionStorage.setItem("selected_depart_flight", JSON.stringify(flight));
-      if (selectedReturnFlight) {
-        sessionStorage.setItem("selected_return_flight", JSON.stringify(selectedReturnFlight));
+
+      // Kiểm tra nếu chuyến về đã có sẵn (từ State hoặc Session)
+      const currentReturn =
+        selectedReturnFlight ||
+        (sessionStorage.getItem("selected_return_flight")
+          ? JSON.parse(sessionStorage.getItem("selected_return_flight")!)
+          : null);
+
+      if (currentReturn) {
         router.push("/flight/passenger");
       }
     } else {
       setSelectedReturnFlight(flight);
+      // Ghi đè vào duy nhất key 'selected_return_flight'
       sessionStorage.setItem("selected_return_flight", JSON.stringify(flight));
-      if (selectedDepartFlight) {
-        sessionStorage.setItem("selected_depart_flight", JSON.stringify(selectedDepartFlight));
+
+      // Kiểm tra nếu chuyến đi đã có sẵn (từ State hoặc Session)
+      const currentDepart =
+        selectedDepartFlight ||
+        (sessionStorage.getItem("selected_depart_flight")
+          ? JSON.parse(sessionStorage.getItem("selected_depart_flight")!)
+          : null);
+
+      if (currentDepart) {
         router.push("/flight/passenger");
       }
     }
@@ -256,7 +344,9 @@ export const FlightBookingHome: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-3">
         <Loader2 className="animate-spin text-[#006838]" size={40} />
-        <p className="text-sm font-medium text-slate-600">Đang tải thông tin chuyến bay...</p>
+        <p className="text-sm font-medium text-slate-600">
+          Đang tải thông tin chuyến bay...
+        </p>
       </div>
     );
   }
@@ -298,12 +388,16 @@ export const FlightBookingHome: React.FC = () => {
               active
                 ? `${activeColorClass} text-white font-semibold`
                 : disabled
-                ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                : "bg-slate-200/70 text-slate-700 hover:bg-slate-200 cursor-pointer"
+                  ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                  : "bg-slate-200/70 text-slate-700 hover:bg-slate-200 cursor-pointer"
             }`}
           >
-            <div className="text-[10px] font-bold leading-tight">{getDayName(date)}</div>
-            <div className="text-[11px] font-medium leading-tight">{formatShortDate(date)}</div>
+            <div className="text-[10px] font-bold leading-tight">
+              {getDayName(date)}
+            </div>
+            <div className="text-[11px] font-medium leading-tight">
+              {formatShortDate(date)}
+            </div>
           </button>
         );
       })}
@@ -333,7 +427,8 @@ export const FlightBookingHome: React.FC = () => {
                       {departGroup?.StartPoint} → {departGroup?.EndPoint}
                     </div>
                     <div className="text-[10px] sm:text-xs opacity-90 mt-0.5">
-                      {getDayName(departDate)}, {formatShortDate(departDate)}/{departDate.getFullYear()}, {departGroup?.Adt || 1} khách
+                      {getDayName(departDate)}, {formatShortDate(departDate)}/
+                      {departDate.getFullYear()}, {departGroup?.Adt || 1} khách
                     </div>
                   </div>
 
@@ -349,9 +444,12 @@ export const FlightBookingHome: React.FC = () => {
                       group={departGroup}
                       airOptions={departAirOptions}
                       showTotalPrice={showTotalPrice}
+                      airlineDiscounts={airlineDiscountResult}
                       expandedIndices={departExpandedIndices}
                       toggleExpand={toggleDepartExpand}
-                      onSelectFlight={(flight) => handleSelectFlight(flight, "depart")}
+                      onSelectFlight={(flight) =>
+                        handleSelectFlight(flight, "depart")
+                      }
                       selectedFlight={selectedDepartFlight}
                     />
                   </div>
@@ -365,7 +463,8 @@ export const FlightBookingHome: React.FC = () => {
                       {returnGroup?.StartPoint} → {returnGroup?.EndPoint}
                     </div>
                     <div className="text-[10px] sm:text-xs opacity-90 mt-0.5">
-                      {getDayName(returnDate)}, {formatShortDate(returnDate)}/{returnDate.getFullYear()}, {returnGroup?.Adt || 1} khách
+                      {getDayName(returnDate)}, {formatShortDate(returnDate)}/
+                      {returnDate.getFullYear()}, {returnGroup?.Adt || 1} khách
                     </div>
                   </div>
 
@@ -382,9 +481,12 @@ export const FlightBookingHome: React.FC = () => {
                       group={returnGroup}
                       airOptions={returnAirOptions}
                       showTotalPrice={showTotalPrice}
+                      airlineDiscounts={airlineDiscountResult}
                       expandedIndices={returnExpandedIndices}
                       toggleExpand={toggleReturnExpand}
-                      onSelectFlight={(flight) => handleSelectFlight(flight, "return")}
+                      onSelectFlight={(flight) =>
+                        handleSelectFlight(flight, "return")
+                      }
                       selectedFlight={selectedReturnFlight}
                     />
                   </div>
@@ -405,9 +507,12 @@ export const FlightBookingHome: React.FC = () => {
                 group={departGroup}
                 airOptions={departAirOptions}
                 showTotalPrice={showTotalPrice}
-                expandedIndices={expandedIndices}
-                toggleExpand={toggleExpand}
-                onSelectFlight={(flight) => handleSelectFlight(flight, "depart")}
+                airlineDiscounts={airlineDiscountResult}
+                expandedIndices={departExpandedIndices}
+                toggleExpand={toggleDepartExpand}
+                onSelectFlight={(flight) =>
+                  handleSelectFlight(flight, "depart")
+                }
                 selectedFlight={selectedDepartFlight}
               />
             </div>

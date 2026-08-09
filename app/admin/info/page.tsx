@@ -33,7 +33,9 @@ export default function AdminSettingsPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Xử lý thay đổi Input
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setConfig((prev) => ({
       ...prev,
@@ -41,7 +43,7 @@ export default function AdminSettingsPage() {
     }));
   };
 
-  // Copy nhanh liên kết/sĐT
+  // Copy nhanh liên kết/SĐT
   const handleCopy = (value: string, fieldName: string) => {
     navigator.clipboard.writeText(value);
     setCopiedField(fieldName);
@@ -70,7 +72,8 @@ export default function AdminSettingsPage() {
               Cấu Hình Thông Tin Hệ Thống
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Quản lý các thông tin liên hệ, hotline và liên kết mạng xã hội hiển thị ở trang khách hàng (Client).
+              Quản lý các thông tin liên hệ, hotline và liên kết mạng xã hội
+              hiển thị ở trang khách hàng (Client).
             </p>
           </div>
           <button
@@ -106,13 +109,13 @@ export default function AdminSettingsPage() {
                     value={config.hotline}
                     onChange={handleChange}
                     placeholder="Nhập số tổng đài..."
-                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => handleCopy(config.hotline, "hotline")}
-                    className="absolute right-2 top-2 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
+                    className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
                   >
                     {copiedField === "hotline" ? "✓ Đã chép" : "Copy"}
                   </button>
@@ -131,13 +134,13 @@ export default function AdminSettingsPage() {
                     value={config.phone}
                     onChange={handleChange}
                     placeholder="Nhập số điện thoại..."
-                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => handleCopy(config.phone, "phone")}
-                    className="absolute right-2 top-2 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
+                    className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
                   >
                     {copiedField === "phone" ? "✓ Đã chép" : "Copy"}
                   </button>
@@ -155,7 +158,7 @@ export default function AdminSettingsPage() {
                   value={config.address}
                   onChange={handleChange}
                   placeholder="Nhập địa chỉ trụ sở/văn phòng..."
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                   required
                 />
               </div>
@@ -184,13 +187,13 @@ export default function AdminSettingsPage() {
                     value={config.website}
                     onChange={handleChange}
                     placeholder="https://..."
-                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => handleCopy(config.website, "website")}
-                    className="absolute right-2 top-2 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
+                    className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
                   >
                     {copiedField === "website" ? "✓ Đã chép" : "Copy"}
                   </button>
@@ -209,13 +212,13 @@ export default function AdminSettingsPage() {
                     value={config.fanpage}
                     onChange={handleChange}
                     placeholder="https://web.facebook.com/..."
-                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => handleCopy(config.fanpage, "fanpage")}
-                    className="absolute right-2 top-2 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
+                    className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
                   >
                     {copiedField === "fanpage" ? "✓ Đã chép" : "Copy"}
                   </button>
@@ -234,13 +237,13 @@ export default function AdminSettingsPage() {
                     value={config.zalo}
                     onChange={handleChange}
                     placeholder="https://zalo.me/..."
-                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => handleCopy(config.zalo, "zalo")}
-                    className="absolute right-2 top-2 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
+                    className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
                   >
                     {copiedField === "zalo" ? "✓ Đã chép" : "Copy"}
                   </button>
@@ -259,13 +262,13 @@ export default function AdminSettingsPage() {
                     value={config.messenger}
                     onChange={handleChange}
                     placeholder="https://m.me/..."
-                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => handleCopy(config.messenger, "messenger")}
-                    className="absolute right-2 top-2 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
+                    className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
                   >
                     {copiedField === "messenger" ? "✓ Đã chép" : "Copy"}
                   </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -11,7 +11,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -31,7 +32,51 @@ const navItems = [
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const accessToken = useAuthStore((state) => state.accessToken);
 
+  const logout = useAuthStore((state) => state.logout);
+
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+
+    try {
+      setLoggingOut(true);
+
+      const response = await fetch("/api/admin/logout", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+
+          ...(accessToken
+            ? {
+                Authorization: `Bearer ${accessToken}`,
+              }
+            : {}),
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || "Không thể đăng xuất");
+      }
+
+      // Xóa Zustand + localStorage admin-auth
+      logout();
+
+      // Chuyển về trang login
+      router.replace("/admin/login");
+    } catch (error) {
+      console.error("LOGOUT ERROR:", error);
+
+      alert(error instanceof Error ? error.message : "Không thể đăng xuất");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
   return (
     <>
       {/* Overlay cho Mobile */}
@@ -112,8 +157,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
               </p>
             </div>
             <button
+              type="button"
               title="Đăng xuất"
-              className="text-slate-400 hover:text-rose-400 transition-colors p-1.5 rounded-lg hover:bg-slate-800 shrink-0"
+              disabled={loggingOut}
+              onClick={handleLogout}
+              className="text-slate-400 hover:text-rose-400 transition-colors p-1.5 rounded-lg hover:bg-slate-800 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LogOut className="w-4 h-4" />
             </button>

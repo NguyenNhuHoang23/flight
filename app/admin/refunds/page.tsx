@@ -1,484 +1,542 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 
-interface RefundCommand {
-  id: string;
-  bankName: string;
-  accountHolder: string;
-  accountNumber: string;
-  amount: number;
-  date: string; // YYYY-MM-DD
-  time: string; // Lưu dạng 24h (Ví dụ PM: "14:30", AM: "09:30")
-  ampm: "AM" | "PM";
-  note: string;
-  status: "pending" | "approved" | "rejected";
-}
+import { CustomerGroup, RefundCommand } from "@/components/refund/refund-types";
 
-interface CustomerGroup {
-  userId: string;
-  username: string;
-  commands: RefundCommand[];
-}
+import RefundCustomerGroup from "@/components/refund/RefundCustomerGroup";
+import { useRefunds } from "@/hook/useRefunds";
+import { useAuthStore } from "@/store/auth-store";
 
-const INITIAL_GROUPS: CustomerGroup[] = [
-  {
-    userId: "713",
-    username: "hoangvanson",
-    commands: [
-      {
-        id: "cmd_101",
-        bankName: "VIB - Ngân hàng TMCP Quốc Tế",
-        accountHolder: "NGÔ THANH NHÀN",
-        accountNumber: "2266789001",
-        amount: 5090000,
-        date: "2026-08-06",
-        time: "21:44", // 21:44 PM
-        ampm: "PM",
-        note: "Khách yêu cầu rút tiền",
-        status: "pending",
-      },
-    ],
-  },
-];
+const normalizeRefundTime = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
 
-// Hàm tạo danh sách mốc giờ cho dropdown dựa vào AM / PM
-const generateTimeOptions = (ampm: "AM" | "PM", currentTime: string) => {
-  const options: { value: string; label: string }[] = [];
-  const startHour = ampm === "AM" ? 0 : 12;
-  const endHour = ampm === "AM" ? 11 : 23;
+  const trimmed = value.trim();
 
-  for (let h = startHour; h <= endHour; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      const formattedHour = h.toString().padStart(2, "0");
-      const formattedMinute = m.toString().padStart(2, "0");
-      const timeVal = `${formattedHour}:${formattedMinute}`;
+  if (!trimmed) {
+    return null;
+  }
 
-      // Hiển thị dạng 12h trực quan (Ví dụ: 14:30 PM hiển thị thành 02:30 PM)
-      const displayHour = h % 12 === 0 ? 12 : h % 12;
-      const displayLabel = `${displayHour.toString().padStart(2, "0")}:${formattedMinute} ${ampm}`;
+  const match = trimmed.match(/^(\d{1,2})(?::(\d{1,2})(?::(\d{1,2}))?)?$/);
 
-      options.push({ value: timeVal, label: displayLabel });
+  if (!match) {
+    return null;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2] || "0");
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return null;
+  }
+
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+};
+
+const formatRefundTimeForApi = (value?: string | null) => {
+  const rawTime = value?.trim() ?? "";
+  const normalizedTime = normalizeRefundTime(rawTime);
+
+  if (normalizedTime) {
+    return normalizedTime;
+  }
+
+  if (/^\d{1,2}:\d{1,2}(?::\d{1,2})?$/.test(rawTime)) {
+    const [hour, minute] = rawTime.split(":");
+    const hourNumber = Number(hour);
+    const minuteNumber = Number(minute);
+
+    if (
+      !Number.isNaN(hourNumber) &&
+      !Number.isNaN(minuteNumber) &&
+      hourNumber >= 0 &&
+      hourNumber <= 23 &&
+      minuteNumber >= 0 &&
+      minuteNumber <= 59
+    ) {
+      return `${String(hourNumber).padStart(2, "0")}:${String(minuteNumber).padStart(2, "0")}`;
     }
   }
 
-  // Nếu thời gian hiện tại không nằm trong bước nhảy 15 phút (ví dụ "21:44"), thêm nó vào danh sách để không mất dữ liệu
-  if (currentTime && !options.some((opt) => opt.value === currentTime)) {
-    const [hStr, mStr] = currentTime.split(":");
-    const h = parseInt(hStr, 10);
-    const displayHour = h % 12 === 0 ? 12 : h % 12;
-    const displayLabel = `${displayHour.toString().padStart(2, "0")}:${mStr} ${ampm}`;
-
-    options.push({ value: currentTime, label: displayLabel });
-    // Sắp xếp lại danh sách theo thứ tự thời gian
-    options.sort((a, b) => a.value.localeCompare(b.value));
-  }
-
-  return options;
+  return rawTime || "00:00";
 };
 
 export default function GroupedRefundPage() {
-  const [customerGroups, setCustomerGroups] = useState<CustomerGroup[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("user_refund_groups");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error(e);
-        }
+  const token = useAuthStore((state) => state.accessToken);
+  const { data, isLoading, isError, error, refetch } = useRefunds(token || "");
+
+  const { mutate: createRefund, isPending: isCreatingRefund } = useMutation({
+    mutationFn: async ({
+      userId,
+      command,
+    }: {
+      userId: string;
+      command: RefundCommand;
+    }) => {
+      console.log("🚀 ~ GroupedRefundPage ~ command:", command);
+      if (!token) {
+        throw new Error("Bạn chưa đăng nhập");
       }
-    }
-    return INITIAL_GROUPS;
+
+      const normalizedTime = formatRefundTimeForApi(command.time);
+
+      const response = await fetch("/api/refund", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: Number(userId),
+          bank_name: command.bankName,
+          account_holder: command.accountHolder,
+          account_number: command.accountNumber,
+          amount: Number(command.amount),
+          date: command.date || null,
+          time: normalizedTime,
+          ampm: command.ampm || "AM",
+          note: command.note || "",
+          status: "pending",
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.message || "Không thể tạo lệnh hoàn tiền mới");
+      }
+
+      return payload;
+    },
   });
 
   const [savedCommandId, setSavedCommandId] = useState<string | null>(null);
+  const [draftCommands, setDraftCommands] = useState<
+    Record<string, Partial<RefundCommand>>
+  >({});
 
-  useEffect(() => {
-    localStorage.setItem("user_refund_groups", JSON.stringify(customerGroups));
-  }, [customerGroups]);
+  const { mutate: updateRefund, isPending: isUpdatingRefund } = useMutation({
+    mutationFn: async ({
+      commandId,
+      payload,
+    }: {
+      commandId: string;
+      payload: Record<string, unknown>;
+    }) => {
+      if (!token) {
+        throw new Error("Bạn chưa đăng nhập");
+      }
 
-  // Cập nhật thông tin thông thường
-  const handleInputChange = (
+      const response = await fetch(`/api/admin/refunds/${commandId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Không thể cập nhật lệnh hoàn tiền");
+      }
+
+      return data;
+    },
+  });
+
+  const { mutate: updateStatus, isPending: isUpdatingStatus } = useMutation({
+    mutationFn: async ({
+      commandId,
+      status,
+      payload,
+    }: {
+      commandId: string;
+      status: "approved" | "rejected";
+      payload: Record<string, unknown>;
+    }) => {
+      if (!token) {
+        throw new Error("Bạn chưa đăng nhập");
+      }
+
+      const endpoint =
+        status === "approved"
+          ? `/api/admin/refunds/${commandId}/approve`
+          : `/api/admin/refunds/${commandId}/reject`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message ||
+            (status === "approved"
+              ? "Không thể duyệt lệnh hoàn tiền"
+              : "Không thể hủy lệnh hoàn tiền"),
+        );
+      }
+
+      return data;
+    },
+  });
+
+  const buildRefundPayload = (command: RefundCommand) => ({
+    bank_name: command.bankName,
+    account_holder: command.accountHolder,
+    account_number: command.accountNumber,
+    amount: Number(command.amount),
+    date: command.date || null,
+    time: formatRefundTimeForApi(command.time),
+    ampm: command.ampm || "AM",
+    note: command.note || "",
+    status: command.status,
+  });
+
+  const customerGroups = useMemo<CustomerGroup[]>(() => {
+    const refunds = data?.data ?? [];
+
+    const groups = new Map<string, CustomerGroup>();
+
+    refunds.forEach((refund) => {
+      const userId = String(refund.user_id);
+
+      if (!groups.has(userId)) {
+        groups.set(userId, {
+          userId,
+          username:
+            refund.user?.name || refund.user?.email || `User #${userId}`,
+          commands: [],
+        });
+      }
+
+      const group = groups.get(userId)!;
+
+      const commandBase: RefundCommand = {
+        id: String(refund.id),
+
+        bankName: refund.bank_name,
+        accountHolder: refund.account_holder,
+        accountNumber: refund.account_number,
+
+        amount: Number(refund.amount),
+
+        date: refund.date || "",
+        time: refund.time || "",
+        ampm: refund.ampm || "AM",
+
+        note: refund.note || "",
+
+        status: refund.status,
+      };
+
+      const command: RefundCommand = {
+        ...commandBase,
+        ...(draftCommands[String(refund.id)] ?? {}),
+      };
+
+      group.commands.push(command);
+    });
+
+    return Array.from(groups.values());
+  }, [data, draftCommands]);
+
+  const getMergedCommand = (commandId: string) => {
+    const found = customerGroups
+      .flatMap((group) => group.commands)
+      .find((command) => command.id === commandId);
+
+    if (!found) {
+      return null;
+    }
+
+    const draft = draftCommands[commandId];
+
+    if (!draft) {
+      return found;
+    }
+
+    return {
+      ...found,
+      ...draft,
+    } as RefundCommand;
+  };
+
+  /**
+   * ============================
+   * UPDATE LOCAL UI
+   * ============================
+   *
+   * Tạm thời giữ lại để component
+   * hoạt động như code cũ.
+   *
+   * Khi làm API PUT sẽ chuyển
+   * phần này thành gọi API.
+   */
+
+  const updateCommand = (
     userId: string,
     commandId: string,
     field: keyof RefundCommand,
-    value: any,
+    value: RefundCommand[keyof RefundCommand],
   ) => {
-    setCustomerGroups((prev) =>
-      prev.map((group) => {
-        if (group.userId !== userId) return group;
-        return {
-          ...group,
-          commands: group.commands.map((cmd) =>
-            cmd.id === commandId ? { ...cmd, [field]: value } : cmd,
-          ),
-        };
-      }),
-    );
+    setDraftCommands((prev) => ({
+      ...prev,
+      [commandId]: {
+        ...(prev[commandId] ?? {}),
+        [field]: value,
+      },
+    }));
   };
 
-  // XỬ LÝ KHI THAY ĐỔI GIỜ HOẶC CHỌN AM/PM
-  const handleTimeOrAmPmChange = (
+  /**
+   * ============================
+   * TIME / AM PM
+   * ============================
+   */
+
+  const handleTimeChange = (
     userId: string,
     commandId: string,
-    newTimeVal?: string,
-    newAmPmVal?: "AM" | "PM",
+    newTime?: string,
+    newAmPm?: "AM" | "PM",
   ) => {
-    setCustomerGroups((prev) =>
-      prev.map((group) => {
-        if (group.userId !== userId) return group;
+    setDraftCommands((prev) => ({
+      ...prev,
+      [commandId]: {
+        ...(prev[commandId] ?? {}),
+        ...(newTime !== undefined ? { time: newTime } : {}),
+        ...(newAmPm !== undefined ? { ampm: newAmPm } : {}),
+      },
+    }));
+  };
 
-        return {
-          ...group,
-          commands: group.commands.map((cmd) => {
-            if (cmd.id !== commandId) return cmd;
+  /**
+   * ============================
+   * ADD
+   * ============================
+   */
 
-            let selectedAmPm = newAmPmVal ?? cmd.ampm;
-            let timeString = newTimeVal ?? cmd.time;
-
-            if (!timeString) return { ...cmd, ampm: selectedAmPm };
-
-            let [h, m] = timeString.split(":");
-            let hours = parseInt(h, 10);
-
-            // Tự động chuyển đổi mốc giờ 24h khi toggle giữa AM và PM
-            if (selectedAmPm === "PM" && hours < 12) {
-              hours += 12;
-            } else if (selectedAmPm === "AM" && hours >= 12) {
-              hours -= 12;
-            }
-
-            const formattedHours = hours.toString().padStart(2, "0");
-            const updatedTime = `${formattedHours}:${m}`;
-
-            return {
-              ...cmd,
-              time: updatedTime,
-              ampm: selectedAmPm,
-            };
-          }),
-        };
-      }),
+  const handleAddCommand = (userId: string, sourceCommand: RefundCommand) => {
+    createRefund(
+      { userId, command: sourceCommand },
+      {
+        onSuccess: () => {
+          refetch();
+        },
+        onError: (error) => {
+          alert(
+            error instanceof Error
+              ? error.message
+              : "Không thể tạo lệnh hoàn tiền mới",
+          );
+        },
+      },
     );
   };
 
-  const handleAddCommandToGroup = (
-    userId: string,
-    sourceCmd: RefundCommand,
-  ) => {
-    const newCommand: RefundCommand = {
-      ...sourceCmd,
-      id: "cmd_" + Date.now(),
-      status: "pending",
-    };
+  /**
+   * ============================
+   * SAVE
+   * ============================
+   */
 
-    setCustomerGroups((prev) =>
-      prev.map((group) => {
-        if (group.userId !== userId) return group;
+  const handleSave = (commandId: string) => {
+    const currentCommand = getMergedCommand(commandId);
 
-        const sourceIndex = group.commands.findIndex(
-          (c) => c.id === sourceCmd.id,
-        );
-        const updatedCmds = [...group.commands];
-        updatedCmds.splice(sourceIndex + 1, 0, newCommand);
+    if (!currentCommand) {
+      return;
+    }
 
-        return {
-          ...group,
-          commands: updatedCmds,
-        };
-      }),
+    updateRefund(
+      {
+        commandId,
+        payload: buildRefundPayload(currentCommand),
+      },
+      {
+        onSuccess: () => {
+          setSavedCommandId(commandId);
+          setDraftCommands((prev) => {
+            const next = { ...prev };
+            delete next[commandId];
+            return next;
+          });
+          refetch();
+
+          setTimeout(() => {
+            setSavedCommandId(null);
+          }, 1500);
+        },
+        onError: (error) => {
+          alert(
+            error instanceof Error
+              ? error.message
+              : "Không thể lưu thay đổi lệnh hoàn tiền",
+          );
+        },
+      },
     );
   };
 
-  const handleSaveCommand = (commandId: string) => {
-    setSavedCommandId(commandId);
-    setTimeout(() => setSavedCommandId(null), 1500);
-  };
+  /**
+   * ============================
+   * STATUS
+   * ============================
+   */
 
   const handleStatusChange = (
     userId: string,
     commandId: string,
-    newStatus: "approved" | "rejected",
+    status: "approved" | "rejected",
   ) => {
-    const actionText = newStatus === "approved" ? "duyệt" : "hủy";
-    if (confirm(`Xác nhận ${actionText} lệnh này?`)) {
-      setCustomerGroups((prev) =>
-        prev.map((group) => {
-          if (group.userId !== userId) return group;
-          return {
-            ...group,
-            commands: group.commands.map((cmd) =>
-              cmd.id === commandId ? { ...cmd, status: newStatus } : cmd,
-            ),
-          };
-        }),
-      );
+    const actionText = status === "approved" ? "duyệt" : "hủy";
+
+    if (!confirm(`Xác nhận ${actionText} lệnh này?`)) {
+      return;
     }
+
+    const currentCommand = getMergedCommand(commandId);
+
+    if (!currentCommand) {
+      return;
+    }
+
+    updateStatus(
+      {
+        commandId,
+        status,
+        payload: {
+          note: currentCommand.note || "",
+          status,
+        },
+      },
+      {
+        onSuccess: () => {
+          refetch();
+        },
+        onError: (error) => {
+          alert(
+            error instanceof Error
+              ? error.message
+              : "Không thể thay đổi trạng thái lệnh hoàn tiền",
+          );
+        },
+      },
+    );
   };
 
+  /**
+   * ============================
+   * LOADING
+   * ============================
+   */
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-sm text-slate-500">
+          Đang tải danh sách hoàn tiền...
+        </div>
+      </div>
+    );
+  }
+
+  /**
+   * ============================
+   * ERROR
+   * ============================
+   */
+
+  if (isError) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-5">
+        <p className="font-semibold text-red-700">
+          Không thể tải danh sách hoàn tiền
+        </p>
+
+        <p className="mt-1 text-sm text-red-600">
+          {error instanceof Error ? error.message : "Có lỗi xảy ra"}
+        </p>
+
+        <button
+          onClick={() => refetch()}
+          className="mt-3 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <h1 className="text-xl font-bold text-slate-900">
-            Quản lý Lệnh Rút / Hoàn Tiền (Giới hạn khung giờ AM / PM)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Chọn <strong>PM</strong>: Danh sách giờ sẽ lọc tự động từ 12:00 PM đến 11:45 PM.
+    <div className="space-y-6">
+      {/* HEADER */}
+
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">
+          Quản lý Lệnh Rút / Hoàn Tiền
+        </h1>
+
+        <p className="mt-1 text-sm text-slate-500">
+          Quản lý các yêu cầu rút tiền của khách hàng.
+        </p>
+
+        <p className="mt-1 text-xs text-slate-400">
+          Tổng số yêu cầu: <b>{data?.data?.length ?? 0}</b>
+        </p>
+      </div>
+
+      {/* EMPTY */}
+
+      {customerGroups.length === 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white py-16 text-center">
+          <p className="text-sm text-slate-500">
+            Chưa có yêu cầu hoàn tiền nào.
           </p>
         </div>
+      )}
 
+      {/* CUSTOMER GROUPS */}
+
+      <div className="space-y-6">
         {customerGroups.map((group) => (
-          <div
+          <RefundCustomerGroup
             key={group.userId}
-            className="bg-white rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden"
-          >
-            <div className="bg-blue-50/80 px-5 py-3 border-b border-blue-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded">
-                  ID USER: #{group.userId}
-                </span>
-                <span className="font-bold text-slate-900 text-sm">
-                  Khách hàng: {group.username}
-                </span>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[1000px]">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
-                    <th className="py-2.5 px-4 w-72">THÔNG TIN RÚT</th>
-                    <th className="py-2.5 px-4 w-48">SỐ TIỀN RÚT</th>
-                    <th className="py-2.5 px-4 w-60">THỜI GIAN</th>
-                    <th className="py-2.5 px-4">GHI CHÚ</th>
-                    <th className="py-2.5 px-4 text-center w-40">THAO TÁC</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-xs">
-                  {group.commands.map((cmd) => (
-                    <tr key={cmd.id} className="hover:bg-slate-50/80 align-top">
-                      {/* THÔNG TIN NGÂN HÀNG */}
-                      <td className="py-3 px-4 space-y-1">
-                        <div className="flex items-center gap-1">
-                          <span className="text-slate-400 w-16 shrink-0">
-                            Ngân hàng:
-                          </span>
-                          <input
-                            type="text"
-                            value={cmd.bankName}
-                            onChange={(e) =>
-                              handleInputChange(
-                                group.userId,
-                                cmd.id,
-                                "bankName",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full border border-slate-300 rounded px-2 py-1 font-medium outline-none focus:border-blue-500"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-slate-400 w-16 shrink-0">
-                            CTK:
-                          </span>
-                          <input
-                            type="text"
-                            value={cmd.accountHolder}
-                            onChange={(e) =>
-                              handleInputChange(
-                                group.userId,
-                                cmd.id,
-                                "accountHolder",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full border border-slate-300 rounded px-2 py-1 font-bold uppercase outline-none focus:border-blue-500"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-slate-400 w-16 shrink-0">
-                            STK:
-                          </span>
-                          <input
-                            type="text"
-                            value={cmd.accountNumber}
-                            onChange={(e) =>
-                              handleInputChange(
-                                group.userId,
-                                cmd.id,
-                                "accountNumber",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full border border-slate-300 rounded px-2 py-1 font-mono font-bold text-blue-600 outline-none focus:border-blue-500"
-                          />
-                        </div>
-                      </td>
-
-                      {/* SỐ TIỀN */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1">
-                          <span className="text-slate-400 shrink-0">
-                            Số tiền:
-                          </span>
-                          <input
-                            type="number"
-                            value={cmd.amount}
-                            onChange={(e) =>
-                              handleInputChange(
-                                group.userId,
-                                cmd.id,
-                                "amount",
-                                Number(e.target.value),
-                              )
-                            }
-                            className="w-full border border-slate-300 rounded px-2 py-1 font-bold text-emerald-600 outline-none focus:border-blue-500"
-                          />
-                        </div>
-                      </td>
-
-                      {/* THỜI GIAN - DROPDOWN GIỜ VÀ CHỌN AM/PM */}
-                      <td className="py-3 px-4 space-y-1">
-                    <div className="flex items-center gap-1">
-  {/* INPUT NHẬP GIỜ (Text format HH:mm) */}
-  <input
-    type="text"
-    placeholder="08:00"
-    maxLength={5}
-    value={cmd.time}
-    onChange={(e) =>
-      handleTimeOrAmPmChange(
-        group.userId,
-        cmd.id,
-        e.target.value,
-        undefined,
-      )
-    }
-    className="w-20 text-center border border-slate-300 bg-white rounded px-1.5 py-1 font-medium outline-none focus:border-blue-500"
-  />
-
-  {/* DROPDOWN CHỌN AM/PM GIỮ NGUYÊN */}
-  <select
-    value={cmd.ampm}
-    onChange={(e) =>
-      handleTimeOrAmPmChange(
-        group.userId,
-        cmd.id,
-        undefined,
-        e.target.value as "AM" | "PM",
-      )
-    }
-    className={`border rounded px-1.5 py-1 font-bold outline-none cursor-pointer ${
-      cmd.ampm === "PM"
-        ? "bg-amber-100 text-amber-800 border-amber-300"
-        : "bg-sky-100 text-sky-800 border-sky-300"
-    }`}
-  >
-    <option value="AM">AM (Sáng)</option>
-    <option value="PM">PM (Chiều/Tối)</option>
-  </select>
-</div>
-
-                        <input
-                          type="date"
-                          value={cmd.date}
-                          onChange={(e) =>
-                            handleInputChange(
-                              group.userId,
-                              cmd.id,
-                              "date",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full border border-slate-300 rounded px-2 py-1 font-medium outline-none focus:border-blue-500"
-                        />
-                      </td>
-
-                      {/* GHI CHÚ */}
-                      <td className="py-3 px-4">
-                        <textarea
-                          rows={2}
-                          value={cmd.note}
-                          placeholder="Ghi chú..."
-                          onChange={(e) =>
-                            handleInputChange(
-                              group.userId,
-                              cmd.id,
-                              "note",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full border border-slate-300 rounded px-2 py-1 focus:border-blue-500 outline-none resize-none"
-                        />
-                      </td>
-
-                      {/* THAO TÁC */}
-                      <td className="py-3 px-4 text-center space-y-2">
-                        <button
-                          onClick={() =>
-                            handleAddCommandToGroup(group.userId, cmd)
-                          }
-                          className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold py-1 px-2 rounded text-[11px] transition"
-                        >
-                          + Thêm 1 lệnh
-                        </button>
-
-                        {cmd.status === "pending" ? (
-                          <>
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() =>
-                                  handleStatusChange(
-                                    group.userId,
-                                    cmd.id,
-                                    "approved",
-                                  )
-                                }
-                                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1 px-2 rounded text-[11px]"
-                              >
-                                Duyệt
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleStatusChange(
-                                    group.userId,
-                                    cmd.id,
-                                    "rejected",
-                                  )
-                                }
-                                className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-1 px-2 rounded text-[11px]"
-                              >
-                                Hủy
-                              </button>
-                            </div>
-
-                            <button
-                              onClick={() => handleSaveCommand(cmd.id)}
-                              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-0.5 px-2 rounded text-[11px]"
-                            >
-                              {savedCommandId === cmd.id ? "✓ Đã lưu" : "Lưu"}
-                            </button>
-                          </>
-                        ) : (
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded font-bold text-[11px] ${
-                              cmd.status === "approved"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-rose-100 text-rose-800"
-                            }`}
-                          >
-                            {cmd.status === "approved" ? "Đã duyệt" : "Đã hủy"}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            group={group}
+            savedCommandId={savedCommandId}
+            isCreating={
+              isCreatingRefund || isUpdatingRefund || isUpdatingStatus
+            }
+            onChange={(commandId, field, value) =>
+              updateCommand(group.userId, commandId, field, value)
+            }
+            onTimeChange={(commandId, newTime, newAmPm) =>
+              handleTimeChange(group.userId, commandId, newTime, newAmPm)
+            }
+            onAddCommand={(command) => handleAddCommand(group.userId, command)}
+            onSave={handleSave}
+            onStatusChange={(commandId, status) =>
+              handleStatusChange(group.userId, commandId, status)
+            }
+          />
         ))}
       </div>
     </div>

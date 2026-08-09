@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const apiFlightUrl =
+      process.env.API_FLIGHT ||
+      "https://ibe.datacom.vn/api/flight/searchflight";
 
     // Bạn có thể giấu các thông tin bảo mật ở phía Server ở đây
     const payload = {
@@ -18,16 +21,13 @@ export async function POST(request: Request) {
       ...body, // Nhận các tham số ListRoute, Adt, Chd, Inf từ Frontend
     };
 
-    const response = await fetch(
-      "https://ibe.datacom.vn/api/flight/searchflight",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+    const response = await fetch(apiFlightUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify(payload),
+    });
 
     if (!response.ok) {
       return NextResponse.json(

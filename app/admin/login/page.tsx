@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function AdminLoginPage() {
   const router = useRouter(); // Hoặc dùng hook từ next/navigation
@@ -19,17 +20,62 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    // Fake API Login Call
-    setTimeout(() => {
+    if (!email || !password) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Email hoặc mật khẩu không đúng");
+      }
+
+      console.log("Login success:", data);
+
+      // Laravel response:
+      // data.data.access_token
+      // data.data.user
+
+      const accessToken = data.data.access_token;
+      const user = data.data.user;
+
+      if (!accessToken) {
+        throw new Error("Không nhận được access token");
+      }
+
+      // Lưu vào Zustand
+      // Zustand persist sẽ tự lưu xuống localStorage
+      login(accessToken, user);
+
+      // Chuyển sang Admin
+      router.push("/admin");
+    } catch (error) {
+      console.error("Login error:", error);
+
+      alert(error instanceof Error ? error.message : "Đăng nhập thất bại");
+    } finally {
       setIsLoading(false);
-      // Chuyển hướng về trang Admin
-      window.location.href = "/admin";
-    }, 1200);
+    }
   };
 
   return (
@@ -68,14 +114,14 @@ export default function AdminLoginPage() {
                   Email quản trị
                 </label>
                 <div className="relative">
-                  <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@system.io"
-                    className="w-full pl-11 pr-4 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-base text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                   />
                 </div>
               </div>
@@ -88,14 +134,14 @@ export default function AdminLoginPage() {
                   </label>
                 </div>
                 <div className="relative">
-                  <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-11 pr-11 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                    className="w-full pl-11 pr-11 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-base text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                   />
                   <button
                     type="button"

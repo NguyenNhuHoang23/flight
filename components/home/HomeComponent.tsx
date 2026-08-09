@@ -12,6 +12,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import FormBook from "./FormBook";
+import BannerSlider from "./BannerSlider";
 
 interface FlightBookingUIProps {
   /** Đường dẫn ảnh banner (mặc định sẽ dùng hình mẫu hoặc đường dẫn truyền vào) */
@@ -21,6 +22,27 @@ interface FlightBookingUIProps {
 export default function FlightBookingUI({
   bannerSrc = "/images/banner.jpg", // Thay đường dẫn ảnh của bạn ở đây
 }: FlightBookingUIProps) {
+  const getRecentBookingDates = () => {
+    const now = new Date();
+
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const dates = [];
+
+    for (let i = 0; i < 4; i++) {
+      const date = new Date(currentYear, currentMonth, now.getDate() + i);
+
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+
+      dates.push(`${day}/${month}`);
+    }
+
+    return dates;
+  };
+
+  const bookingDates = getRecentBookingDates();
   return (
     <>
       {/* 1. Main Search Form Area */}
@@ -30,28 +52,8 @@ export default function FlightBookingUI({
 
         {/* Right Section: Banner & News Feed */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-     {/* BANNER NỀN BẰNG NEXT/IMAGE */}
-{/* BANNER NỀN BẰNG NEXT/IMAGE */}
-<div className="relative rounded overflow-hidden border border-gray-200 shadow-sm h-[180px] w-full bg-gray-100 flex items-center justify-center">
-  {/* Ảnh banner */}
-  <Image
-    src={bannerSrc}
-    alt="Banner Sun PhuQuoc Airways"
-    fill
-    priority
-    className="object-contain object-center"
-    sizes="(max-width: 1024px) 100vw, 40vw"
-  />
-
-  {/* Các chấm slider/dot indicator */}
-  <div className="absolute bottom-2 left-0 right-0 flex justify-center space-x-1.5 z-10">
-    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
-    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
-    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
-    <span className="w-2 h-2 rounded-full bg-white shadow-sm"></span>
-    <span className="w-2 h-2 rounded-full bg-white opacity-60 shadow-sm"></span>
-  </div>
-</div>
+          {/* BANNER NỀN BẰNG NEXT/IMAGE */}
+          <BannerSlider />
 
           {/* Tin mới cập nhật */}
           <div className="bg-white p-3 rounded border border-gray-200">
@@ -109,7 +111,7 @@ export default function FlightBookingUI({
                     <span className="italic font-semibold text-blue-800">
                       Vietravel Airlines
                     </span>
-                    <span>29/07</span>
+                    <span>{bookingDates[0]}</span>
                   </div>
                 </div>
               </div>
@@ -141,7 +143,7 @@ export default function FlightBookingUI({
                     <span className="italic font-bold text-red-600">
                       VietJet.air
                     </span>
-                    <span>30/01</span>
+                    <span>{bookingDates[1]}</span>
                   </div>
                 </div>
               </div>
@@ -173,7 +175,7 @@ export default function FlightBookingUI({
                     <span className="italic font-bold text-red-600">
                       VietJet.air
                     </span>
-                    <span>26/08</span>
+                    <span>{bookingDates[1]}</span>
                   </div>
                 </div>
               </div>
@@ -205,7 +207,7 @@ export default function FlightBookingUI({
                     <span className="italic font-semibold text-blue-800">
                       Vietravel Airlines
                     </span>
-                    <span>29/07</span>
+                    <span>{bookingDates[2]}</span>
                   </div>
                 </div>
               </div>

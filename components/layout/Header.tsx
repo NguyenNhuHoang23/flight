@@ -8,7 +8,7 @@ export default function Header() {
   return (
     <>
       {/* 1. Header Top */}
-      <header className="bg-white py-3 px-4 md:px-16 flex flex-wrap justify-between items-center border-b">
+      <header className=" py-3 px-4 md:px-16 flex flex-wrap justify-between items-center max-w-6xl mx-auto">
         <Logo />
 
         <div className="flex items-center space-x-2 text-right">
@@ -44,12 +44,14 @@ export default function Header() {
             <span>LỊCH SỬ</span>
           </Link>
 
-          <Link href="/blog" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
+          <Link
+            href="/blog"
+            className="px-3 py-2.5 hover:bg-[#004d28] uppercase"
+          >
             TIN TỨC
           </Link>
 
-                   <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
-    
+          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
             QUẢN LÝ ĐẶT CHỖ
           </Link>
 

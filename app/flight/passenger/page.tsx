@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { FlightBookingForm } from "@/components/form/FlightBookingForm";
+import { FlightBookingForm } from "@/components/FlightBookingForm/FlightBookingForm";
 import { AirOptionAPI } from "@/components/detail/flight-types";
 
 export interface BookingDataState {
@@ -14,88 +14,104 @@ export interface BookingDataState {
 
 export default function PassengerPage() {
   const router = useRouter();
+
   const [bookingData, setBookingData] = useState<BookingDataState>({
     departFlight: null,
     returnFlight: null,
     isRoundTrip: false,
   });
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Đọc dữ liệu từ sessionStorage
-    const storedDepart = sessionStorage.getItem("selected_depart_flight");
-    const storedReturn = sessionStorage.getItem("selected_return_flight");
-    
-    // Đọc fallback key cũ nếu có
-    const storedLegacy = sessionStorage.getItem("selected_flight");
+    const loadBookingData = () => {
+      try {
+        const tripType = sessionStorage.getItem("booking_trip_type");
+        const storedDepart = sessionStorage.getItem("selected_depart_flight");
+        const storedReturn = sessionStorage.getItem("selected_return_flight");
+        const storedLegacy = sessionStorage.getItem("selected_flight");
 
-    let depart: AirOptionAPI | null = null;
-    let returnF: AirOptionAPI | null = null;
+        let depart: AirOptionAPI | null = null;
+        let returnF: AirOptionAPI | null = null;
 
-    try {
-      if (storedDepart) {
-        depart = JSON.parse(storedDepart);
-      } else if (storedLegacy) {
-        // Hỗ trợ cấu trúc lưu trữ cũ (Legacy support)
-        const parsedLegacy = JSON.parse(storedLegacy);
-        depart = parsedLegacy.airOption || parsedLegacy;
+        // PARSE CHUYẾN ĐI
+        if (storedDepart) {
+          depart = JSON.parse(storedDepart);
+        } else if (storedLegacy) {
+          const parsedLegacy = JSON.parse(storedLegacy);
+          depart = parsedLegacy.airOption || parsedLegacy;
+        }
+
+        // PARSE CHUYẾN VỀ
+        if (storedReturn) {
+          returnF = JSON.parse(storedReturn);
+        }
+
+        // TỰ ĐỘNG XÁC ĐỊNH LOẠI CHUYẾN BAY (NẾU THIẾU KEY tripType)
+        const isRoundTrip =
+          tripType === "round-trip" || (Boolean(depart) && Boolean(returnF));
+
+        setBookingData({
+          departFlight: depart,
+          returnFlight: isRoundTrip ? returnF : null,
+          isRoundTrip,
+        });
+      } catch (error) {
+        console.error("Lỗi đọc thông tin đặt vé từ sessionStorage:", error);
+        setBookingData({
+          departFlight: null,
+          returnFlight: null,
+          isRoundTrip: false,
+        });
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      if (storedReturn) {
-        returnF = JSON.parse(storedReturn);
-      }
-    } catch (err) {
-      console.error("Lỗi parse thông tin đặt vé từ sessionStorage:", err);
-    }
-
-    setBookingData({
-      departFlight: depart,
-      returnFlight: returnF,
-      isRoundTrip: Boolean(depart && returnF),
-    });
-
-    setIsLoading(false);
+    loadBookingData();
   }, []);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-3">
-        <Loader2 className="animate-spin text-[#006838]" size={40} />
-        <p className="text-sm font-medium text-slate-600">
-          Đang tải thông tin hành khách...
-        </p>
-      </div>
-    );
-  }
-
-  // Nếu không tìm thấy chiều đi (truy cập trực tiếp URL mà chưa chọn vé)
-  if (!bookingData.departFlight) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-4 gap-4">
-        <div className="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 text-center max-w-md shadow-sm">
-          <p className="text-slate-700 font-medium mb-4">
-            Không tìm thấy thông tin chuyến bay đã chọn. Vui lòng thực hiện tìm kiếm lại.
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-7 w-7 animate-spin text-[#006838]" />
+          <p className="text-sm text-gray-600">
+            Đang tải thông tin hành khách...
           </p>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="bg-[#006838] hover:bg-[#00522c] text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow"
-          >
-            Quay lại tìm kiếm
-          </button>
         </div>
       </div>
     );
   }
 
+  if (!bookingData.departFlight) {
+    return (
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-4">
+        <p className="text-center text-sm text-gray-600">
+          Không tìm thấy thông tin chuyến bay đã chọn.
+          <br />
+          Vui lòng thực hiện tìm kiếm lại.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="rounded-lg bg-[#006838] px-5 py-2.5 text-sm font-bold text-white shadow transition hover:bg-[#00522c]"
+        >
+          Quay lại tìm kiếm
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-slate-100 py-6 px-2 sm:px-4">
+    <div className="mx-auto max-w-5xl px-4 py-5">
       <FlightBookingForm
         departFlight={bookingData.departFlight}
         returnFlight={bookingData.returnFlight}
         isRoundTrip={bookingData.isRoundTrip}
         onBack={() => router.back()}
       />
-    </main>
+    </div>
   );
 }
