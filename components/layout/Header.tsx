@@ -3,8 +3,11 @@ import React from "react";
 import { ArrowUpRight, Home, Wallet } from "lucide-react";
 import { Logo } from "./Logo";
 import Link from "next/link";
+import { useGetData } from "@/context/GetContext";
 
 export default function Header() {
+    const { info, isLoading, error: loadError, refetchInfo } = useGetData();
+  
   return (
     <>
       {/* 1. Header Top */}
@@ -13,7 +16,13 @@ export default function Header() {
 
         <div className="flex items-center space-x-2 text-right">
           <span className="text-gray-700 font-medium text-sm">Tổng đài</span>
-          <span className="text-sm font-bold text-[#e63946]">0868.003.443</span>
+          {isLoading ? (
+            <span className="text-sm text-gray-500">Đang tải...</span>
+          ) : loadError ? (
+            <span className="text-sm text-red-500">Lỗi tải thông tin</span>
+          ) : (
+            <span className="text-sm font-bold text-[#e63946]">{info?.hotline}</span>
+          )}
         </div>
       </header>
 

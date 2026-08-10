@@ -66,7 +66,7 @@ export default function AdminOrderListPage() {
   // ==================================================
 
   const handlePrintTicket = (order: Order) => {
-    router.push(`/admin/orders/${order.id}`);
+    window.open(`/admin/orders/${order.id}`, "_blank", "noopener,noreferrer");
   };
 
   // ==================================================

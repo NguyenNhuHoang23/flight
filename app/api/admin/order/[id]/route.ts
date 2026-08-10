@@ -8,7 +8,10 @@ interface RouteContext {
   }>;
 }
 
-async function proxyUpdate(request: NextRequest, context: RouteContext) {
+async function proxyUpdate(
+  request: NextRequest,
+  context: RouteContext,
+) {
   try {
     if (!API_URL) {
       return NextResponse.json(
@@ -43,7 +46,7 @@ async function proxyUpdate(request: NextRequest, context: RouteContext) {
     const response = await fetch(
       `${API_URL}/api/admin/orders/${encodeURIComponent(id)}`,
       {
-        method: "POST",
+        method: request.method,
         headers: {
           Accept: "application/json",
 
@@ -75,14 +78,80 @@ async function proxyUpdate(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function POST(request: NextRequest, context: RouteContext) {
+/**
+ * GET DETAIL ORDER
+ */
+export async function GET(
+  request: NextRequest,
+  context: RouteContext,
+) {
+  try {
+    if (!API_URL) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "NEXT_PUBLIC_API_URL chưa được cấu hình",
+        },
+        { status: 500 },
+      );
+    }
+
+    const { id } = await context.params;
+
+    const authorization = request.headers.get("Authorization");
+
+    const response = await fetch(
+      `${API_URL}/api/admin/orders/${encodeURIComponent(id)}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+
+          ...(authorization
+            ? {
+                Authorization: authorization,
+              }
+            : {}),
+        },
+        cache: "no-store",
+      },
+    );
+
+    const data = await response.json();
+
+    return NextResponse.json(data, {
+      status: response.status,
+    });
+  } catch (error) {
+    console.error("GET ORDER DETAIL ERROR:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Không thể lấy chi tiết đơn hàng",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  context: RouteContext,
+) {
   return proxyUpdate(request, context);
 }
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(
+  request: NextRequest,
+  context: RouteContext,
+) {
   return proxyUpdate(request, context);
 }
 
-export async function PUT(request: NextRequest, context: RouteContext) {
+export async function PUT(
+  request: NextRequest,
+  context: RouteContext,
+) {
   return proxyUpdate(request, context);
 }

@@ -1,6 +1,9 @@
+import { useGetData } from "@/context/GetContext";
 import { PhoneCall, Mail, MapPin, ShieldCheck, CreditCard, Clock } from "lucide-react";
 
 export default function Fooder() {
+    const { info, isLoading, error: loadError, refetchInfo } = useGetData();
+
     return (
            <footer className="bg-[#1e293b] text-slate-300 pt-10 pb-6 mt-12 border-t border-slate-700">
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -16,15 +19,15 @@ export default function Fooder() {
             <div className="pt-2 space-y-2 text-xs">
               <div className="flex items-center gap-2 text-slate-300">
                 <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Hà Nội / TP. Hồ Chí Minh, Việt Nam</span>
+                <span>{info?.address}</span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
                 <PhoneCall className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Hotline: 123456789</span>
+                <span>Hotline: {info?.hotline}</span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
                 <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>cskh@vemaybay.com</span>
+                <span>{info?.fanpage}</span>
               </div>
             </div>
           </div>

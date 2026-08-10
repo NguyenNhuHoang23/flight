@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, use } from "react";
-import { useRouter } from "next/navigation";
-import { MOCK_ORDERS, Order } from "../data"; // Đảm bảo đúng path tệp data của bạn
+import React, { useEffect, useState, use } from "react";
+import { useRouter } from "next/navigation"; // Đảm bảo đúng path tệp data của bạn
 import Image from "next/image";
+import { Order } from "@/components/admin/orders/data";
+import { useGetOrderDetail } from "@/hook/useGetOrderDetail";
+import { useAuthStore } from "@/store/auth-store";
 
 type AirlineBrand = "vietnam_airlines" | "vietravel" | "vietjet" | "bamboo";
 
@@ -25,7 +27,7 @@ interface TicketFormState {
   departTime: string;
   arrivalTime: string;
   flightDuration: string;
-  mealQr: string | null; // Thêm trường mealQr để lưu đường dẫn QR code bữa ăn
+  mealQr: string | null;
   cabinClass: string;
   seat: string;
   gate: string;
@@ -38,6 +40,99 @@ interface TicketFormState {
   invoiceNo: string;
 }
 
+function parseAirportValue(value: string) {
+  const trimmedValue = value.trim();
+  const codeMatch = trimmedValue.match(/^([A-Z0-9]{3,4})\b/);
+  const cityMatch = trimmedValue.match(/\(([^)]+)\)/);
+
+  return {
+    code: codeMatch?.[1] || trimmedValue || "SGN",
+    city: cityMatch?.[1] || trimmedValue || "Hà Nội",
+  };
+}
+
+function formatFlightDate(value: string) {
+  if (!value) return "Thứ Sáu, 17/07/2026";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function mapPassengerType(type: string) {
+  const normalizedType = type.toLowerCase();
+
+  if (normalizedType.includes("adult")) return "Người lớn";
+  if (normalizedType.includes("child")) return "Trẻ em";
+  if (normalizedType.includes("infant")) return "Em bé";
+
+  return "Người lớn";
+}
+
+function mapApiOrderToTicketOrder(
+  orderDetail: import("@/hook/useGetOrderDetail").OrderDetail,
+): Order {
+  const flights = orderDetail.flights || [];
+  const passengers = orderDetail.passengers || [];
+
+  return {
+    id: orderDetail.order_code,
+    customerName: orderDetail.contact_name || "Chưa có tên",
+    customerPhone: orderDetail.contact_phone || "Chưa có SĐT",
+    customerEmail: orderDetail.contact_email || "Chưa có email",
+    passengers: passengers.map((passenger) => ({
+      name: passenger.full_name,
+      type: mapPassengerType(passenger.passenger_type),
+      passportOrCccd: passenger.document_number || "Chưa có",
+    })),
+    paymentProofUrl: orderDetail.payment_bill_image || undefined,
+    flightType:
+      flights.some((flight) => flight.trip_type === "return") || flights.length > 1
+        ? "round_trip"
+        : "one_way",
+    flights: flights.map((flight) => {
+      const departure = parseAirportValue(flight.departure_airport);
+      const arrival = parseAirportValue(flight.arrival_airport);
+      const departAt = new Date(flight.departure_at);
+      const arrivalAt = flight.arrival_at ? new Date(flight.arrival_at) : null;
+
+      return {
+        airline: flight.airline_name,
+        logo: flight.airline_code || "✈️",
+        flightNumber: flight.flight_number,
+        departure: departure.code,
+        arrival: arrival.code,
+        departTime: Number.isNaN(departAt.getTime())
+          ? flight.departure_at
+          : `${new Intl.DateTimeFormat("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(departAt)} - ${formatFlightDate(flight.departure_at)}`,
+        arrivalTime:
+          !arrivalAt || Number.isNaN(arrivalAt.getTime())
+            ? flight.arrival_at || ""
+            : `${new Intl.DateTimeFormat("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(arrivalAt)} - ${formatFlightDate(flight.arrival_at || "")}`,
+        seatClass: "Phổ thông",
+      };
+    }),
+    totalAmount: Number(orderDetail.total_amount || 0),
+    status: orderDetail.status as Order["status"],
+    createdAt: orderDetail.created_at,
+  };
+}
+
 export default function CustomTicketPage({
   params,
 }: {
@@ -46,15 +141,21 @@ export default function CustomTicketPage({
   const router = useRouter();
   const resolvedParams = use(params);
   const orderId = resolvedParams.id;
+  const token = useAuthStore((state) => state.accessToken);
+  const {
+    data: orderDetailResponse,
+    isLoading,
+    isError,
+    error,
+  } = useGetOrderDetail(token || "", orderId);
 
-  // Tìm đơn hàng tương ứng
-  const order: Order | undefined = MOCK_ORDERS.find((o) => o.id === orderId);
+  const order = orderDetailResponse?.data
+    ? mapApiOrderToTicketOrder(orderDetailResponse.data)
+    : undefined;
 
   // Mặc định chuyến bay đi (index 0) và chuyến bay về (index 1 nếu có)
   const outboundFlight = order?.flights[0];
   const inboundFlight = order?.flights[1];
-  const firstPassenger = order?.passengers[0];
-
   const isRoundTrip =
     order?.flightType === "round_trip" || (order?.flights.length ?? 0) > 1;
 
@@ -83,14 +184,16 @@ export default function CustomTicketPage({
     departureCity: flight?.departure === "SGN" ? "Hồ Chí Minh" : "Hà Nội",
     arrivalCode: flight?.arrival || "HAN",
     arrivalCity: flight?.arrival === "HAN" ? "Hà Nội" : "Hồ Chí Minh",
-    departDate: "Thứ Sáu, 17/07/2026",
+    departDate: flight?.departTime?.split(" - ")[1] || "Thứ Sáu, 17/07/2026",
     departTime: flight?.departTime
-      ? flight.departTime.split(" ")[1] || "18:00"
+      ? flight.departTime.split(" - ")[0] || "18:00"
       : "18:00",
-    arrivalTime: "20:10",
+    arrivalTime: flight?.arrivalTime
+      ? flight.arrivalTime.split(" - ")[0] || "20:10"
+      : "20:10",
     mealQr: null,
     flightDuration: "2h 10m",
-    cabinClass: "Phổ thông",
+    cabinClass: flight?.seatClass || "Phổ thông",
     seat: "6A",
     gate: "01",
     terminal: "Terminal 1",
@@ -164,6 +267,50 @@ export default function CustomTicketPage({
     createInitialTicketData(inboundFlight || outboundFlight),
   ]);
 
+  useEffect(() => {
+    if (!order) {
+      return;
+    }
+
+    const nextOutboundFlight = order.flights[0];
+    const nextInboundFlight = order.flights[1] || order.flights[0];
+
+    setTicketsData([
+      createInitialTicketData(nextOutboundFlight),
+      createInitialTicketData(nextInboundFlight),
+    ]);
+    setActiveFlightIndex(0);
+  }, [order?.id]);
+
+  if (isLoading) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold text-slate-700">
+          Đang tải chi tiết đơn hàng #{orderId}...
+        </h2>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold text-red-600">
+          Không thể tải đơn hàng #{orderId}
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          {error instanceof Error ? error.message : "Đã xảy ra lỗi khi gọi API"}
+        </p>
+        <button
+          onClick={() => router.back()}
+          className="mt-4 px-4 py-2 bg-slate-800 text-white rounded"
+        >
+          Quay lại
+        </button>
+      </div>
+    );
+  }
+
   if (!order) {
     return (
       <div className="p-8 text-center">
@@ -233,9 +380,6 @@ export default function CustomTicketPage({
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              // Lấy orderId từ URL hiện tại của bạn (ví dụ: ORD-2026-001)
-              const orderId = "ORD-2026-001";
-
               // Đóng gói và lưu toàn bộ data vé hiện tại vào localStorage
               localStorage.setItem(
                 `print_ticket_${orderId}`,
@@ -292,7 +436,7 @@ export default function CustomTicketPage({
           <h2 className="font-bold text-slate-900 border-b pb-2 text-sm uppercase tracking-wide">
             1. Thương hiệu hãng vé
           </h2>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 text-black">
             {[
               { id: "vietnam_airlines", name: "Vietnam Airlines" },
               { id: "vietravel", name: "Vietravel Airlines" },
@@ -326,7 +470,7 @@ export default function CustomTicketPage({
                 type="text"
                 value={customData.pnr}
                 onChange={(e) => handleInputChange("pnr", e.target.value)}
-                className="w-full p-2 border rounded font-mono font-bold"
+                className="w-full p-2 border rounded font-mono font-bold text-black"
               />
             </div>
             <div>
@@ -339,7 +483,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("flightNumber", e.target.value)
                 }
-                className="w-full p-2 border rounded font-bold"
+                className="w-full p-2 border rounded font-bold text-black"
               />
             </div>
 
@@ -388,7 +532,7 @@ export default function CustomTicketPage({
                         onChange={(e) =>
                           handlePassengerChange(index, "name", e.target.value)
                         }
-                        className="w-full p-1.5 border rounded font-bold uppercase text-xs"
+                        className="w-full p-1.5 border rounded font-bold uppercase text-xs text-black"
                       />
                     </div>
                     <div>
@@ -401,7 +545,7 @@ export default function CustomTicketPage({
                         onChange={(e) =>
                           handlePassengerChange(index, "dob", e.target.value)
                         }
-                        className="w-full p-1.5 border rounded text-xs"
+                        className="w-full p-1.5 border rounded text-xs text-black"
                       />
                     </div>
                     <div>
@@ -414,7 +558,7 @@ export default function CustomTicketPage({
                         onChange={(e) =>
                           handlePassengerChange(index, "seat", e.target.value)
                         }
-                        className="w-full p-1.5 border rounded font-bold text-sky-700 text-xs"
+                        className="w-full p-1.5 border rounded font-bold text-sky-700 text-xs text-black"
                       />
                     </div>
                   </div>
@@ -431,7 +575,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("departDate", e.target.value)
                 }
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded text-black"
               />
             </div>
 
@@ -445,7 +589,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("departureCode", e.target.value)
                 }
-                className="w-full p-2 border rounded font-bold"
+                className="w-full p-2 border rounded font-bold text-black"
               />
             </div>
             <div>
@@ -458,7 +602,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("arrivalCode", e.target.value)
                 }
-                className="w-full p-2 border rounded font-bold"
+                className="w-full p-2 border rounded font-bold text-black"
               />
             </div>
 
@@ -472,7 +616,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("departTime", e.target.value)
                 }
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded text-black"
               />
             </div>
             <div>
@@ -485,7 +629,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("arrivalTime", e.target.value)
                 }
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded text-black"
               />
             </div>
 
@@ -497,7 +641,7 @@ export default function CustomTicketPage({
                 type="text"
                 value={customData.seat}
                 onChange={(e) => handleInputChange("seat", e.target.value)}
-                className="w-full p-2 border rounded font-bold text-sky-700"
+                className="w-full p-2 border rounded font-bold text-sky-700 text-black"
               />
             </div>
             <div>
@@ -508,7 +652,7 @@ export default function CustomTicketPage({
                 type="text"
                 value={customData.gate}
                 onChange={(e) => handleInputChange("gate", e.target.value)}
-                className="w-full p-2 border rounded font-bold"
+                className="w-full p-2 border rounded font-bold text-black"
               />
             </div>
 
@@ -522,7 +666,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("cabinClass", e.target.value)
                 }
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded text-black"
               />
             </div>
             <div>
@@ -533,7 +677,7 @@ export default function CustomTicketPage({
                 type="text"
                 value={customData.baggage}
                 onChange={(e) => handleInputChange("baggage", e.target.value)}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded text-black"
               />
             </div>
             <div>
@@ -545,7 +689,7 @@ export default function CustomTicketPage({
                 onChange={(e) =>
                   handleInputChange("ticketStatus", e.target.value)
                 }
-                className="w-full p-2 border rounded font-bold bg-white"
+                className="w-full p-2 border rounded font-bold bg-white text-black"
               >
                 <option value="">Trống</option>
                 <option value="ĐANG XỬ LÝ">Đang xử lý</option>
@@ -561,7 +705,7 @@ export default function CustomTicketPage({
                   type="file"
                   accept="image/*"
                   id="meal-qr-upload"
-                  className="hidden"
+                  className="hidden text-black"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -603,7 +747,7 @@ export default function CustomTicketPage({
 
         {/* BÊN PHẢI: XEM TRƯỚC VÉ ĐƯỢC CUSTOM (PREVIEW / PRINT) */}
         <div className="lg:col-span-9 flex justify-center">
-          <div className="print-area w-full max-w-[880px]">
+          <div className="print-area w-full max-w-220">
             {/* MẪU VIETNAM AIRLINES HOẶC VIETRAVEL AIRLINES */}
             {(selectedBrand === "vietnam_airlines" ||
               selectedBrand === "vietravel") && (
@@ -1031,7 +1175,7 @@ export default function CustomTicketPage({
                   </div>
 
                   {/* Khối bên phải: Logo & Thông tin pháp lý Bamboo */}
-                  <div className="text-right space-y-0.5 max-w-[280px]">
+                  <div className="text-right space-y-0.5 max-w-70">
                     <div className="flex justify-end items-center gap-1">
                       <Image
                         src={`/images/ve/Bamboo_Air.png`}

@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/auth-store";
+import { useGetData } from "@/context/GetContext";
 
 // Định nghĩa Interface cho Settings
 export interface SystemConfig {
@@ -15,22 +17,79 @@ export interface SystemConfig {
   bankInfo?: string;
 }
 
-// Dữ liệu mẫu ban đầu theo hình ảnh của bạn
-const INITIAL_CONFIG: SystemConfig = {
-  fanpage: "https://web.facebook.com/profile.php?id=61577101716986",
-  hotline: "0347.10.3333",
-  address: "Trụ sở : Số 7 Trần Nguyên Hãn, Lê Chân, TP Hải Phòng",
-  website: "https://sanvemaybay24h.com/",
-  zalo: "https://zalo.me/84",
-  messenger: "https://web.facebook.com/profile.php?id=61577101716986",
-  phone: "0347.10.3333",
-  emailContact: "support@sanvemaybay24h.com",
+type AdminInfoApiData = {
+  hotline: string;
+  phone: string;
+  address: string;
+  website: string;
+  facebook: string;
+  zalo: string;
+  messenger: string;
+  email_contact?: string | null;
+  bank_info?: string | null;
 };
 
+type AdminInfoApiResponse = {
+  success: boolean;
+  message?: string;
+  data: AdminInfoApiData;
+};
+
+const DEFAULT_CONFIG: SystemConfig = {
+  fanpage: "",
+  hotline: "",
+  address: "",
+  website: "",
+  zalo: "",
+  messenger: "",
+  phone: "",
+  emailContact: "",
+  bankInfo: "",
+};
+
+function mapApiDataToConfig(data: AdminInfoApiData): SystemConfig {
+  return {
+    fanpage: data.facebook || "",
+    hotline: data.hotline || "",
+    address: data.address || "",
+    website: data.website || "",
+    zalo: data.zalo || "",
+    messenger: data.messenger || "",
+    phone: data.phone || "",
+    emailContact: data.email_contact || "",
+    bankInfo: data.bank_info || "",
+  };
+}
+
+function mapConfigToPayload(config: SystemConfig) {
+  return {
+    hotline: config.hotline,
+    phone: config.phone,
+    address: config.address,
+    website: config.website,
+    facebook: config.fanpage,
+    zalo: config.zalo,
+    messenger: config.messenger,
+    email_contact: config.emailContact || null,
+    bank_info: config.bankInfo || null,
+  };
+}
+
 export default function AdminSettingsPage() {
-  const [config, setConfig] = useState<SystemConfig>(INITIAL_CONFIG);
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  const { info, isLoading, error: loadError, refetchInfo } = useGetData();
+
+  const [config, setConfig] = useState<SystemConfig>(DEFAULT_CONFIG);
   const [isSaving, setIsSaving] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (info) {
+      setConfig(info);
+    }
+  }, [info]);
+ 
 
   // Xử lý thay đổi Input
   const handleChange = (
@@ -51,15 +110,38 @@ export default function AdminSettingsPage() {
   };
 
   // Submit Form Lưu Cấu Hình
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
+    try {
+      setIsSaving(true);
 
-    // Giả lập call API lưu cấu hình
-    setTimeout(() => {
-      setIsSaving(false);
+      const response = await fetch("/api/admin/info", {
+        method: "PUT",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(accessToken
+            ? {
+                Authorization: `Bearer ${accessToken}`,
+              }
+            : {}),
+        },
+        body: JSON.stringify(mapConfigToPayload(config)),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Không thể cập nhật thông tin website");
+      }
+
+      await refetchInfo();
       alert("Đã cập nhật thông tin cấu hình hệ thống thành công!");
-    }, 600);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Không thể cập nhật thông tin website");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -78,12 +160,24 @@ export default function AdminSettingsPage() {
           </div>
           <button
             type="button"
-            onClick={() => setConfig(INITIAL_CONFIG)}
+            onClick={() => setConfig(DEFAULT_CONFIG)}
             className="self-start sm:self-center px-3.5 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
           >
             ↺ Khôi phục mặc định
           </button>
         </div>
+
+        {isLoading && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 text-sm text-slate-500 shadow-sm">
+            Đang tải thông tin website...
+          </div>
+        )}
+
+        {loadError && (
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-sm text-rose-700 shadow-sm">
+            {loadError}
+          </div>
+        )}
 
         {/* Form Cấu Hình */}
         <form onSubmit={handleSubmit} className="space-y-6">

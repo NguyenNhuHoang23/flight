@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import FormBook from "./FormBook";
 import BannerSlider from "./BannerSlider";
+import { useGetData } from "@/context/GetContext";
 
 interface FlightBookingUIProps {
   /** Đường dẫn ảnh banner (mặc định sẽ dùng hình mẫu hoặc đường dẫn truyền vào) */
@@ -22,6 +23,8 @@ interface FlightBookingUIProps {
 export default function FlightBookingUI({
   bannerSrc = "/images/banner.jpg", // Thay đường dẫn ảnh của bạn ở đây
 }: FlightBookingUIProps) {
+    const { info, isLoading, error: loadError, refetchInfo } = useGetData();
+
   const getRecentBookingDates = () => {
     const now = new Date();
 
@@ -245,7 +248,7 @@ export default function FlightBookingUI({
                   <div className="font-medium text-gray-700">
                     Đặt vé trực tuyến
                   </div>
-                  <div className="text-blue-600">website: www.senbay.vn</div>
+                  <div className="text-blue-600">website: {info?.website}</div>
                 </div>
               </div>
 
@@ -258,7 +261,7 @@ export default function FlightBookingUI({
                     Tổng đài hỗ trợ
                   </div>
                   <div className="text-blue-600 font-bold text-sm">
-                    0868.003.443
+                    {info?.hotline}
                   </div>
                 </div>
               </div>
@@ -293,7 +296,7 @@ export default function FlightBookingUI({
                 </div>
                 <div>
                   <div className="text-gray-700">
-                    97 Trần Quang Diệu, Nhiêu Lộc, Hồ Chí Minh
+                    {info?.address}
                   </div>
                 </div>
               </div>
