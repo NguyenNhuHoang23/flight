@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${url}/api/admin/login`, {
+    const response = await fetch(`${url}/api/admin/login-admin`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
