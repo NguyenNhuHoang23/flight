@@ -1,6 +1,7 @@
 import React from "react";
 import { Logo } from "./Logo";
 import Image from "next/image";
+import { useBankAccounts } from "@/hook/useBankAccounts";
 
 export default function PaymentInvoice({ formData, formatAmount, getQrUrl }) {
   // Dữ liệu mẫu khớp hoàn toàn với mẫu ảnh
@@ -22,6 +23,14 @@ export default function PaymentInvoice({ formData, formatAmount, getQrUrl }) {
     status: formData?.status || "10 phút trước",
     amount: formData?.amount || 1200000,
   };
+
+  const { accounts } = useBankAccounts();
+  const activeBank = accounts.find((bank) => bank.isActive === true);
+  const qrValue = activeBank
+    ? `https://img.vietqr.io/image/${activeBank.bankName}-${activeBank.accountNumber}-qr_only.png?accountName=${encodeURIComponent(
+        activeBank.accountHolder,
+      )}`
+    : "";
 
   return (
     <div className="w-full flex flex-col items-center justify-center p-4 font-sans">
@@ -195,11 +204,13 @@ export default function PaymentInvoice({ formData, formatAmount, getQrUrl }) {
               {/* ================= MÃ QR ================= */}
               <div className="mt-20 flex flex-col items-center justify-center pr-12">
                 <div className="p-1">
-                  <img
-                    src={getQrUrl ? getQrUrl() : "/api/placeholder/180/180"}
-                    alt="VietQR Code"
-                    className="w-[175px] h-[175px] object-contain"
-                  />
+                  {qrValue && (
+                    <img
+                      src={qrValue}
+                      alt="QR thanh toán"
+                      className="block w-60 h-50 object-contain"
+                    />
+                  )}
                 </div>
               </div>
             </div>

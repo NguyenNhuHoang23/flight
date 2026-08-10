@@ -233,7 +233,7 @@ function PaymentContent() {
   const isBusy = isSubmitting || createOrder.isPending;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-5">
+    <div className="mx-auto max-w-5xl px-4 py-5">
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_380px]">
         {/* LEFT */}
         <section>

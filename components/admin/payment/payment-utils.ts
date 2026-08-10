@@ -117,6 +117,7 @@ export function buildPassengerPayloads(
       passenger_type: normalizePassengerType(passenger.passenger_type),
       document_type: passenger.document_type,
       document_number: passenger.document_number,
+      date_of_birth: passenger.date_of_birth,
     }));
   }
 
@@ -124,6 +125,7 @@ export function buildPassengerPayloads(
     {
       full_name: fallbackName,
       passenger_type: "adult",
+      date_of_birth: undefined,
     },
   ];
 }

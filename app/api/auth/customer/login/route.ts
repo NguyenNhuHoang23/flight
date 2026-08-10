@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         Accept: "application/json",
       },
       body: JSON.stringify({
-        email: body.email,
+        userName: body.userName,
         password: body.password,
       }),
     });

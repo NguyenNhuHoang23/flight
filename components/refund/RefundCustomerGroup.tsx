@@ -25,7 +25,7 @@ interface RefundCustomerGroupProps {
     newAmPm?: "AM" | "PM",
   ) => void;
 
-  onAddCommand: (command: RefundCommand) => void;
+  onAddCommand: (commandId: string) => void;
 
   onSave: (commandId: string) => void;
 
@@ -103,7 +103,7 @@ export default function RefundCustomerGroup({
             w-full
             text-left
             border-collapse
-            min-w-[1000px]
+            min-w-250
           "
         >
           <thead>
@@ -147,7 +147,7 @@ export default function RefundCustomerGroup({
                 onTimeChange={(newTime, newAmPm) =>
                   onTimeChange(command.id, newTime, newAmPm)
                 }
-                onAdd={() => onAddCommand(command)}
+                onAdd={() => onAddCommand(command.id)}
                 onSave={() => onSave(command.id)}
                 onStatusChange={(status) => onStatusChange(command.id, status)}
               />

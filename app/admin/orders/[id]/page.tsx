@@ -39,6 +39,41 @@ interface TicketFormState {
   ticketNumber: string;
   invoiceNo: string;
 }
+function generatePassengerQrData(
+  passenger: PassengerInfo,
+  ticket: TicketFormState,
+) {
+  return [
+    `${passenger.name}`,
+    `${ticket.departureCode} - ${ticket.arrivalCode}`,
+  ].join("\n");
+}
+
+function PassengerQr({
+  passenger,
+  ticket,
+  size = 180,
+}: {
+  passenger: PassengerInfo;
+  ticket: TicketFormState;
+  size?: number;
+}) {
+  const qrData = generatePassengerQrData(passenger, ticket);
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
+    qrData,
+  )}`;
+
+  return (
+    <img
+      src={qrUrl}
+      alt={`QR ${passenger.name}`}
+      width={size}
+      height={size}
+      className="w-full h-full object-contain"
+    />
+  );
+}
 
 function parseAirportValue(value: string) {
   const trimmedValue = value.trim();
@@ -52,20 +87,38 @@ function parseAirportValue(value: string) {
 }
 
 function formatFlightDate(value: string) {
-  if (!value) return "Thứ Sáu, 17/07/2026";
+  if (!value) return "";
 
-  const date = new Date(value);
+  // API trả về:
+  // 2026-08-10T22:50:00.000000Z
 
-  if (Number.isNaN(date.getTime())) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+
+  if (!match) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("vi-VN", {
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
+  const [, year, month, day] = match;
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatFlightTime(value: string) {
+  if (!value) return "";
+
+  // Không dùng new Date()
+  // Không convert timezone
+  // Lấy nguyên giờ từ API
+
+  const match = value.match(/T(\d{2}):(\d{2})/);
+
+  if (!match) {
+    return value;
+  }
+
+  const [, hour, minute] = match;
+
+  return `${hour}:${minute}`;
 }
 
 function mapPassengerType(type: string) {
@@ -96,14 +149,13 @@ function mapApiOrderToTicketOrder(
     })),
     paymentProofUrl: orderDetail.payment_bill_image || undefined,
     flightType:
-      flights.some((flight) => flight.trip_type === "return") || flights.length > 1
+      flights.some((flight) => flight.trip_type === "return") ||
+      flights.length > 1
         ? "round_trip"
         : "one_way",
     flights: flights.map((flight) => {
       const departure = parseAirportValue(flight.departure_airport);
       const arrival = parseAirportValue(flight.arrival_airport);
-      const departAt = new Date(flight.departure_at);
-      const arrivalAt = flight.arrival_at ? new Date(flight.arrival_at) : null;
 
       return {
         airline: flight.airline_name,
@@ -111,19 +163,12 @@ function mapApiOrderToTicketOrder(
         flightNumber: flight.flight_number,
         departure: departure.code,
         arrival: arrival.code,
-        departTime: Number.isNaN(departAt.getTime())
-          ? flight.departure_at
-          : `${new Intl.DateTimeFormat("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }).format(departAt)} - ${formatFlightDate(flight.departure_at)}`,
-        arrivalTime:
-          !arrivalAt || Number.isNaN(arrivalAt.getTime())
-            ? flight.arrival_at || ""
-            : `${new Intl.DateTimeFormat("vi-VN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }).format(arrivalAt)} - ${formatFlightDate(flight.arrival_at || "")}`,
+        departTime: `${formatFlightTime(flight.departure_at)} - ${formatFlightDate(
+          flight.departure_at,
+        )}`,
+        arrivalTime: `${formatFlightTime(flight.arrival_at)} - ${formatFlightDate(
+          flight.arrival_at,
+        )}`,
         seatClass: "Phổ thông",
       };
     }),
@@ -839,11 +884,11 @@ export default function CustomTicketPage({
                         </div>
                         <div className="col-span-2 rounded-sm text-xs relative">
                           {/* Mũi tên nằm chính giữa tuyệt đối */}
-                          <div className="absolute left-38 top-3 -translate-x-1/2 text-black text-xs font-bold pointer-events-none">
+                          <div className="absolute left-44 top-16 -translate-x-1/2 text-black text-xs font-bold pointer-events-none">
                             ►
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-3 ml-6">
                             {/* Cột Khởi hành (Trái) */}
                             <div className="space-y-1.5 pr-1">
                               <div className="text-base font-black text-slate-900 leading-none">
@@ -911,19 +956,13 @@ export default function CustomTicketPage({
                             <div>QR chuyến bay:</div>
 
                             <div className="pt-2 flex justify-start">
-                              {customData.mealQr ? (
-                                <div className="w-46 h-46 border border-slate-300 p-1.5 bg-white rounded-sm shadow-sm">
-                                  <img
-                                    src={customData.mealQr}
-                                    alt="QR Bữa ăn"
-                                    className="w-full h-full object-contain"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="text-[11px] text-slate-500 italic pt-1">
-                                  (Chưa cập nhật QR bữa ăn)
-                                </div>
-                              )}
+                              <div className="w-32 h-32 border border-slate-300 p-1.5 bg-white rounded-sm shadow-sm">
+                                <PassengerQr
+                                  passenger={customData.passengers[0]}
+                                  ticket={customData}
+                                  size={200}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1026,8 +1065,11 @@ export default function CustomTicketPage({
                       HÀNH KHÁCH
                     </div>
                     <div className="font-extrabold text-xs text-black uppercase leading-relaxed whitespace-pre-line">
-                      {customData.passengers?.[0]?.name} -{" "}
-                      {customData.passengers?.[0]?.dob}
+                      {customData.passengers.map((passenger, index) => (
+                        <div key={index} className={index > 0 ? "mt-1" : ""}>
+                          {passenger.name} - {passenger.dob}
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -1124,12 +1166,14 @@ export default function CustomTicketPage({
 
                   {/* Mã QR */}
                   <div className="pt-2 flex justify-center">
-                    <div className="w-28 h-28 bg-white p-1 border border-slate-200 rounded-sm">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${customData.pnr || "TY3BA2"}`}
-                        alt="Mã QR"
-                        className="w-full h-full object-contain"
-                      />
+                    <div className="pt-2 flex justify-start">
+                      <div className="w-32 h-32 border border-slate-300 p-1.5 bg-white rounded-sm shadow-sm">
+                        <PassengerQr
+                          passenger={customData.passengers[0]}
+                          ticket={customData}
+                          size={200}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1149,10 +1193,10 @@ export default function CustomTicketPage({
                   {/* Khối bên trái: QR & PNR */}
                   <div className="flex gap-4 items-start">
                     <div className="w-16 h-16 border border-slate-300 p-1 bg-white">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${customData.pnr || "05FOLA"}`}
-                        alt="Mã QR"
-                        className="w-full h-full object-contain"
+                      <PassengerQr
+                        passenger={customData.passengers[0]}
+                        ticket={customData}
+                        size={200}
                       />
                     </div>
                     <div className="text-xs space-y-0.5">
@@ -1202,36 +1246,47 @@ export default function CustomTicketPage({
                   <h2 className="font-bold text-slate-800 text-sm mb-2">
                     Hành khách
                   </h2>
-                  <div className="border-t border-slate-200 pt-2 grid grid-cols-5 gap-2 text-[11px] text-nlack">
-                    <div className="font-bold text-slate-800 uppercase">
-                      {customData.passengers?.[0]?.name || "PHUONG ANH MAI"}
-                    </div>
-                    <div>
-                      Ngày sinh:
-                      <br />
-                      <span className="font-medium">
-                        {customData.passengers?.[0]?.dob || "-"}
-                      </span>
-                    </div>
-                    <div>
-                      Số vé điện tử:
-                      <br />
-                      <span className="font-medium">
-                        {customData.ticketNumber || "22421300223"}
-                      </span>
-                    </div>
-                    <div>
-                      Hóa đơn số:
-                      <br />
-                      <span className="font-medium">
-                        {customData.invoiceNo || "92600653523"}
-                      </span>
-                    </div>
-                    <div>
-                      Mã số khách hàng trung thành:
-                      <br />
-                      <span className="font-medium">-</span>
-                    </div>
+                  <div className="border-t border-slate-200 pt-2 space-y-3 text-[11px]">
+                    {customData.passengers.map((passenger, index) => (
+                      <div
+                        key={index}
+                        className="grid grid-cols-5 gap-2 text-nlack"
+                      >
+                        <div className="font-bold text-slate-800 uppercase">
+                          {passenger.name || `HÀNH KHÁCH ${index + 1}`}
+                        </div>
+
+                        <div>
+                          Ngày sinh:
+                          <br />
+                          <span className="font-medium">
+                            {passenger.dob || "-"}
+                          </span>
+                        </div>
+
+                        <div>
+                          Số vé điện tử:
+                          <br />
+                          <span className="font-medium">
+                            {customData.ticketNumber || "22421300223"}
+                          </span>
+                        </div>
+
+                        <div>
+                          Hóa đơn số:
+                          <br />
+                          <span className="font-medium">
+                            {customData.invoiceNo || "92600653523"}
+                          </span>
+                        </div>
+
+                        <div>
+                          Mã số khách hàng trung thành:
+                          <br />
+                          <span className="font-medium">-</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

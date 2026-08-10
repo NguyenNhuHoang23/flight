@@ -26,6 +26,7 @@ export interface StoredPassengerInfo {
   passenger_type?: string;
   document_type?: string;
   document_number?: string;
+  date_of_birth?: string;
 }
 
 export interface StoredFlightSegment {

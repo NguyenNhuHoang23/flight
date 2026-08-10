@@ -4,7 +4,7 @@ import { BLOG_POSTS } from '../data/post';
 export default function BlogListPage() {
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans">
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-sky-600 text-xs font-bold tracking-widest uppercase bg-sky-50 border border-sky-100 px-3.5 py-1.5 rounded-full inline-flex items-center gap-1.5 shadow-sm">

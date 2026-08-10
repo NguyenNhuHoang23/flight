@@ -133,7 +133,7 @@ export default function OrderCard({
 
                 <div className="text-[10px] text-slate-500">
                   {passenger.type} •{" "}
-                  <span className="font-mono">{passenger.passportOrCccd}</span>
+                  <span className="font-mono">{passenger.dateOfBirth}</span>
                 </div>
               </div>
             ))}
@@ -181,9 +181,13 @@ export default function OrderCard({
 
                   <span>{flight.arrival}</span>
                 </div>
-
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  🕒 {flight.departTime}
+                <div className="flex items-center justify-between font-semibold text-slate-700 text-[11px] mt-0.5">
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    🕒 {flight.departTime}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    🕒 {flight.arrivalTime}
+                  </div>
                 </div>
               </div>
             ))}

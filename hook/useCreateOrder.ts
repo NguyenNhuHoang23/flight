@@ -7,6 +7,7 @@ export interface PassengerPayload {
   passenger_type?: string;
   document_type?: string;
   document_number?: string;
+  date_of_birth?: string;
 }
 
 export interface FlightPayload {
@@ -84,6 +85,13 @@ export function useCreateOrder() {
           passenger.passenger_type ?? "adult",
         );
 
+        if (passenger.date_of_birth) {
+          formData.append(
+            `passengers[${index}][date_of_birth]`,
+            passenger.date_of_birth,
+          );
+        }
+
         if (passenger.document_type) {
           formData.append(
             `passengers[${index}][document_type]`,
@@ -104,6 +112,7 @@ export function useCreateOrder() {
       // ==========================================
 
       payload.flights.forEach((flight, index) => {
+        console.log("🚀 ~ useCreateOrder ~ flight:", flight);
         formData.append(`flights[${index}][trip_type]`, flight.trip_type);
 
         formData.append(`flights[${index}][airline_name]`, flight.airline_name);

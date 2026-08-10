@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useClientAuthStore } from "@/store/client-auth-store";
 
 interface LoginPayload {
-  email: string;
+  userName: string;
   password: string;
 }
 

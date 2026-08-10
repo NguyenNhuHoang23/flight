@@ -9,25 +9,31 @@ import CustomerModal from "@/components/admin/customer/CustomerModal";
 import { CustomerFormData } from "@/components/admin/customer/customer-types";
 
 const INITIAL_FORM: CustomerFormData = {
-  name: "",
-  email: "",
+  username: "",
   password: "",
-  password_confirmation: "",
   balance: "",
 };
 
 export default function CustomerManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editingCustomer, setEditingCustomer] =
+    useState<Customer | null>(null);
 
-  const [formData, setFormData] = useState<CustomerFormData>(INITIAL_FORM);
+  const [formData, setFormData] =
+    useState<CustomerFormData>(INITIAL_FORM);
 
   const [submitting, setSubmitting] = useState(false);
 
   const token = useAuthStore.getState().accessToken || "";
 
-  const { data, isLoading, isError, error, refetch } = useCustomers(token);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useCustomers(token);
 
   const customers = data?.data?.data ?? [];
 
@@ -49,11 +55,9 @@ export default function CustomerManagementPage() {
     setEditingCustomer(customer);
 
     setFormData({
-      name: customer.name,
-      email: customer.email,
+      username: customer.username,
       password: "",
-      password_confirmation: "",
-      balance: customer.balance || "0",
+      balance: String(customer.balance ?? 0),
     });
 
     setIsModalOpen(true);
@@ -75,7 +79,7 @@ export default function CustomerManagementPage() {
   // CREATE / UPDATE
   // =========================
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
@@ -90,18 +94,19 @@ export default function CustomerManagementPage() {
       const method = isEdit ? "PUT" : "POST";
 
       const body: Record<string, unknown> = {
-        name: formData.name,
-        email: formData.email,
+        username: formData.username,
         balance: Number(formData.balance || 0),
       };
 
+      // Tạo mới bắt buộc có password
       if (!isEdit) {
         body.password = formData.password;
-        body.password_confirmation = formData.password_confirmation;
         body.role = "customer";
-      } else if (formData.password) {
+      }
+
+      // Cập nhật chỉ gửi password nếu người dùng nhập
+      if (isEdit && formData.password) {
         body.password = formData.password;
-        body.password_confirmation = formData.password_confirmation;
       }
 
       const response = await fetch(url, {
@@ -118,26 +123,37 @@ export default function CustomerManagementPage() {
 
       if (!response.ok) {
         if (result.errors) {
-          const firstError = Object.values(result.errors).flat().at(0);
+          const firstError = Object.values(result.errors)
+            .flat()
+            .at(0);
 
-          throw new Error(String(firstError || result.message));
+          throw new Error(
+            String(firstError || result.message)
+          );
         }
 
-        throw new Error(result.message || "Không thể thực hiện thao tác");
+        throw new Error(
+          result.message || "Không thể thực hiện thao tác"
+        );
       }
 
       alert(
-        isEdit ? "Cập nhật tài khoản thành công!" : "Tạo tài khoản thành công!",
+        isEdit
+          ? "Cập nhật tài khoản thành công!"
+          : "Tạo tài khoản thành công!"
       );
 
       handleCloseModal();
 
-      // Load lại danh sách
       await refetch();
     } catch (error) {
       console.error("Customer submit error:", error);
 
-      alert(error instanceof Error ? error.message : "Có lỗi xảy ra");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Có lỗi xảy ra"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -153,18 +169,23 @@ export default function CustomerManagementPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/account/${id}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/admin/account/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Không thể xóa tài khoản");
+        throw new Error(
+          result.message || "Không thể xóa tài khoản"
+        );
       }
 
       alert("Xóa tài khoản thành công!");
@@ -173,12 +194,16 @@ export default function CustomerManagementPage() {
     } catch (error) {
       console.error("Delete customer error:", error);
 
-      alert(error instanceof Error ? error.message : "Có lỗi xảy ra khi xóa");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Có lỗi xảy ra khi xóa"
+      );
     }
   };
 
   return (
-    <div className="p-6">
+    <div>
       {/* HEADER */}
 
       <div className="flex items-center justify-between mb-6">
@@ -188,7 +213,7 @@ export default function CustomerManagementPage() {
           </h1>
 
           <p className="text-sm text-gray-500 mt-1">
-            Quản lý tài khoản và thông tin cá nhân của khách hàng
+            Quản lý tài khoản khách hàng
           </p>
         </div>
 

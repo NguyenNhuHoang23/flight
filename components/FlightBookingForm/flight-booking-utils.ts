@@ -85,6 +85,8 @@ export const getFlightSummary = (
 
     departureAt: formatLaravelDateTime(depDateStr),
 
+    arrivalAt: formatLaravelDateTime(arrDateStr),
+
     adults: adultsCount ?? apiAdults,
 
     children: childrenCount ?? apiChildren,

@@ -1,4 +1,4 @@
-import { AirOptionAPI } from "../detail/flight-types";
+import { AirOptionAPI, FarePax } from "../detail/flight-types";
 
 export interface PassengerFormState {
   id: string;
@@ -32,6 +32,7 @@ export interface FlightSummary {
   flightNumber: string;
   depTime: string;
   arrTime: string;
+  arrivalAt: string;
   equipmentCode: string;
   baseFareSum: number;
   totalFareSum: number;
@@ -43,7 +44,7 @@ export interface FlightSummary {
   adults: number;
   children: number;
   infants: number;
-  listFarePax: Array<Record<string, unknown>>;
+  listFarePax: FarePax[];
 }
 
 export interface FlightBookingFormProps {

@@ -38,7 +38,6 @@ export default function AdminOrderListPage() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   const [viewingBillUrl, setViewingBillUrl] = useState<string | null>(null);
-  console.log("🚀 ~ AdminOrderListPage ~ viewingBillUrl:", viewingBillUrl);
 
   // ==================================================
   // FILTER

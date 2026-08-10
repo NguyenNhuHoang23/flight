@@ -102,15 +102,50 @@ export const FlightRow: React.FC<Props> = ({
     0,
   );
 
-  const finalTotalPrice =
-    cheapestFare?.TotalFare && cheapestFare.TotalFare > totalGroupPrice
-      ? cheapestFare.TotalFare
-      : totalGroupPrice > 0
-        ? totalGroupPrice
-        : cheapestFare?.TotalFare || 0;
+  const finalTotalPrice = listFarePax.reduce((total, pax) => {
+    const paxType = String(
+      pax.PaxType || pax.PassengerType || pax.PaxCode || "",
+    ).toLowerCase();
+
+    const paxCount = pax.PaxNumb || 1;
+    const basePrice = pax.TotalFare || 0;
+
+    // ==============================
+    // NGƯỜI LỚN: 100%
+    // ==============================
+    if (paxType === "adult" || paxType === "adt" || paxType === "a") {
+      return total + basePrice * paxCount;
+    }
+
+    // ==============================
+    // TRẺ EM: 70% GIÁ NGƯỜI LỚN
+    // Giảm 30%
+    // ==============================
+    if (paxType === "child" || paxType === "chd" || paxType === "c") {
+      const childPrice = Math.round(basePrice * 0.7);
+
+      return total + childPrice * paxCount;
+    }
+
+    // ==============================
+    // EM BÉ: 200.000đ / người
+    // ==============================
+    if (paxType === "infant" || paxType === "inf" || paxType === "i") {
+      return total + 200000 * paxCount;
+    }
+
+    // ==============================
+    // FALLBACK
+    // ==============================
+    return total + basePrice * paxCount;
+  }, 0);
 
   // ============================================================
   // GIÁ SAU DISCOUNT
+  // Discount voucher áp dụng SAU khi đã tính:
+  // Adult 100%
+  // Child 80%
+  // Infant 200.000đ
   // ============================================================
   const discountedTotalPrice = calculateDiscountedPrice
     ? calculateDiscountedPrice(finalTotalPrice, discountPercent)

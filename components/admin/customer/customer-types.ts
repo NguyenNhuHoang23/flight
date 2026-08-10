@@ -1,17 +1,14 @@
 export interface Customer {
   id: number;
-  name: string;
-  email: string;
-  balance: string;
+  username: string;
   role: "admin" | "customer";
-  created_at?: string;
-  updated_at?: string;
+  balance: number | string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CustomerFormData {
-  name: string;
-  email: string;
+  username: string;
   password: string;
-  password_confirmation: string;
   balance: string;
 }

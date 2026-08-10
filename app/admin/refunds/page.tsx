@@ -335,9 +335,22 @@ export default function GroupedRefundPage() {
    * ============================
    */
 
-  const handleAddCommand = (userId: string, sourceCommand: RefundCommand) => {
+  const handleAddCommand = (userId: string, commandId: string) => {
+    const sourceCommand = getMergedCommand(commandId);
+
+    if (!sourceCommand) {
+      return;
+    }
+
     createRefund(
-      { userId, command: sourceCommand },
+      {
+        userId,
+        command: {
+          ...sourceCommand,
+          time: formatRefundTimeForApi(sourceCommand.time),
+          ampm: sourceCommand.ampm || "AM",
+        },
+      },
       {
         onSuccess: () => {
           refetch();
@@ -531,7 +544,9 @@ export default function GroupedRefundPage() {
             onTimeChange={(commandId, newTime, newAmPm) =>
               handleTimeChange(group.userId, commandId, newTime, newAmPm)
             }
-            onAddCommand={(command) => handleAddCommand(group.userId, command)}
+            onAddCommand={(commandId) =>
+              handleAddCommand(group.userId, commandId)
+            }
             onSave={handleSave}
             onStatusChange={(commandId, status) =>
               handleStatusChange(group.userId, commandId, status)

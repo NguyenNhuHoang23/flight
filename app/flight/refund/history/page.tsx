@@ -166,7 +166,7 @@ export default function RefundHistoryPage() {
   });
   return (
     <main className="min-h-screen bg-gray-50 py-6 px-3 sm:px-6 font-sans">
-      <div className="max-w-6xl mx-auto space-y-4">
+      <div className="max-w-5xl mx-auto space-y-4">
         {/* Top Header */}
         <div className="bg-white rounded-lg p-4 shadow-xs border border-gray-200 flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-3">

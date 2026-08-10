@@ -233,7 +233,7 @@ export default function CreateInvoicePage() {
                 className="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-slate-600 font-medium mb-1">
                 Tải ảnh QR
               </label>
@@ -243,7 +243,7 @@ export default function CreateInvoicePage() {
                 onChange={handleImageUpload}
                 className="w-full border border-slate-300 rounded px-1.5 py-1 text-[11px] focus:outline-none"
               />
-            </div>
+            </div> */}
           </div>
 
           <div>

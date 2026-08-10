@@ -105,7 +105,7 @@ export default function PassengerPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-5">
+    <div className="mx-auto max-w-5xl px-4 sm:px-0 py-5">
       <FlightBookingForm
         departFlight={bookingData.departFlight}
         returnFlight={bookingData.returnFlight}

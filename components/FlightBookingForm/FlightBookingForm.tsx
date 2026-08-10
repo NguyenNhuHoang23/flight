@@ -252,16 +252,29 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
     // BOOKING PASSENGERS
     // ==================================================
 
-    const bookingPassengers = passengers.map((passenger) => ({
-      full_name: passenger.fullName.trim(),
+    const bookingPassengers = passengers.map((passenger) => {
+      let date_of_birth: string | undefined;
 
-      passenger_type:
-        passenger.type === "ADULT"
-          ? "adult"
-          : passenger.type === "CHILD"
-            ? "child"
-            : "infant",
-    }));
+      if (passenger.dobDay && passenger.dobMonth && passenger.dobYear) {
+        date_of_birth = `${passenger.dobYear}-${passenger.dobMonth.padStart(
+          2,
+          "0",
+        )}-${passenger.dobDay.padStart(2, "0")}`;
+      }
+
+      return {
+        full_name: passenger.fullName.trim(),
+
+        passenger_type:
+          passenger.type === "ADULT"
+            ? "adult"
+            : passenger.type === "CHILD"
+              ? "child"
+              : "infant",
+
+        date_of_birth,
+      };
+    });
 
     // ==================================================
     // SESSION STORAGE
@@ -315,6 +328,7 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
         departure_airport: departInfo.startPoint,
         arrival_airport: departInfo.endPoint,
         departure_at: departInfo.departureAt,
+        arrival_at: departInfo.arrivalAt,
       },
     ];
 
@@ -327,6 +341,7 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
         departure_airport: returnInfo.startPoint,
         arrival_airport: returnInfo.endPoint,
         departure_at: returnInfo.departureAt,
+        arrival_at: returnInfo.arrivalAt,
       });
     }
 

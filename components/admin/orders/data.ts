@@ -1,146 +1,156 @@
 export type FlightType = "one_way" | "round_trip" | "multi_city";
+
 export type OrderStatus = "pending" | "confirmed" | "cancelled";
 
 export interface Passenger {
-  name: string;
-  type: "Người lớn" | "Trẻ em" | "Em bé";
-  passportOrCccd: string;
+  id: number;
+  order_id: number;
+  full_name: string;
+  passenger_type: "adult" | "child" | "infant";
+  document_type: string | null;
+  document_number: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface FlightSegment {
-  airline: string;
-  logo: string;
-  flightNumber: string;
-  departure: string;
-  arrival: string;
-  departTime: string;
-  arrivalTime: string;
-  seatClass: string;
+export interface OrderFlight {
+  id: number;
+  order_id: number;
+
+  // outbound = chiều đi
+  // return = chiều về
+  trip_type: "outbound" | "return";
+
+  airline_name: string;
+  airline_code: string | null;
+  flight_number: string;
+
+  departure_airport: string;
+  arrival_airport: string;
+
+  departure_at: string | null;
+  arrival_at: string | null;
+
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Order {
   id: string;
+
+  // Mã đơn hàng thực tế từ API
+  orderCode: string;
+
+  status: OrderStatus;
+
+  // Thời gian đặt đơn
+  bookingAt: string;
+
+  // Thông tin người liên hệ
   customerName: string;
   customerPhone: string;
-  customerEmail: string;
-  passengers: Passenger[];
-  paymentProofUrl?: string;
-  flightType: FlightType;
-  flights: FlightSegment[];
+  customerEmail: string | null;
+
+  // Thanh toán
   totalAmount: number;
-  status: OrderStatus;
-  createdAt: string;
+  paymentMethod: string | null;
+  paymentProofUrl?: string | null;
+  transferContent: string | null;
+
+  // Hành khách
+  passengers: Passenger[];
+
+  // Chuyến bay
+  flights: OrderFlight[];
+
+  // Dùng trực tiếp cho UI
+  outboundFlight?: OrderFlight;
+  returnFlight?: OrderFlight;
 }
 
-export const MOCK_ORDERS: Order[] = [
-  {
-    id: "ORD-2026-001",
-    customerName: "Nguyễn Văn An",
-    customerPhone: "0912345678",
-    customerEmail: "an.nguyen@gmail.com",
-    paymentProofUrl: "/images/may-bay-vector-png-09.png",
-    passengers: [
-      {
-        name: "NGUYEN VAN AN",
-        type: "Người lớn",
-        passportOrCccd: "001092001234",
-      },
-      { name: "LE THI HOA", type: "Người lớn", passportOrCccd: "001195005678" },
-    ],
-    flightType: "round_trip",
-    flights: [
-      {
-        airline: "Vietnam Airlines",
-        logo: "✈️",
-        flightNumber: "VN-210",
-        departure: "HAN (Hà Nội)",
-        arrival: "SGN (TP.HCM)",
-        departTime: "08:00 - 06/08/2026",
-        arrivalTime: "10:10 - 06/08/2026",
-        seatClass: "Phổ thông linh hoạt",
-      },
-      {
-        airline: "Vietjet Air",
-        logo: "🚀",
-        flightNumber: "VJ-185",
-        departure: "SGN (TP.HCM)",
-        arrival: "HAN (Hà Nội)",
-        departTime: "19:30 - 10/08/2026",
-        arrivalTime: "21:40 - 10/08/2026",
-        seatClass: "Eco",
-      },
-    ],
-    totalAmount: 4850000,
-    status: "pending",
-    createdAt: "06/08/2026 14:30",
-  },
-  {
-    id: "ORD-2026-002",
-    customerName: "Phạm Minh Tuấn",
-    customerPhone: "0987654321",
-    customerEmail: "tuan.pham@hotmail.com",
-    passengers: [
-      { name: "PHAM MINH TUAN", type: "Người lớn", passportOrCccd: "C8392019" },
-    ],
-    flightType: "one_way",
-    flights: [
-      {
-        airline: "Bamboo Airways",
-        logo: "🎋",
-        flightNumber: "QH-203",
-        departure: "HAN (Hà Nội)",
-        arrival: "DAD (Đà Nẵng)",
-        departTime: "11:15 - 08/08/2026",
-        arrivalTime: "12:35 - 08/08/2026",
-        seatClass: "Thương gia (Business)",
-      },
-    ],
-    totalAmount: 3200000,
-    status: "confirmed",
-    createdAt: "06/08/2026 10:15",
-  },
-  {
-    id: "ORD-2026-003",
-    customerName: "Hoàng Thu Thảo",
-    customerPhone: "0905112233",
-    customerEmail: "thao.hoang@yahoo.com",
-    passengers: [
-      {
-        name: "HOANG THU THAO",
-        type: "Người lớn",
-        passportOrCccd: "036198000111",
-      },
-      {
-        name: "NGUYEN HOANG NAM",
-        type: "Trẻ em",
-        passportOrCccd: "Khai sinh 9928",
-      },
-    ],
-    flightType: "round_trip",
-    flights: [
-      {
-        airline: "Vietravel Airlines",
-        logo: "🟡",
-        flightNumber: "VU-781",
-        departure: "HAN (Hà Nội)",
-        arrival: "PQC (Phú Quốc)",
-        departTime: "06:20 - 12/08/2026",
-        arrivalTime: "08:30 - 12/08/2026",
-        seatClass: "Phổ thông",
-      },
-      {
-        airline: "Vietravel Airlines",
-        logo: "🟡",
-        flightNumber: "VU-782",
-        departure: "PQC (Phú Quốc)",
-        arrival: "HAN (Hà Nội)",
-        departTime: "16:00 - 15/08/2026",
-        arrivalTime: "18:10 - 15/08/2026",
-        seatClass: "Phổ thông",
-      },
-    ],
-    totalAmount: 6100000,
-    status: "cancelled",
-    createdAt: "05/08/2026 18:00",
-  },
-];
+/**
+ * Chuyển passenger_type từ API
+ * adult / child / infant
+ * sang text hiển thị tiếng Việt.
+ */
+export function getPassengerTypeLabel(
+  type: Passenger["passenger_type"],
+): string {
+  switch (type) {
+    case "adult":
+      return "Người lớn";
+
+    case "child":
+      return "Trẻ em";
+
+    case "infant":
+      return "Em bé";
+
+    default:
+      return type;
+  }
+}
+
+/**
+ * Xác định loại chuyến bay từ danh sách flights.
+ */
+export function getFlightType(flights: OrderFlight[]): FlightType {
+  const hasOutbound = flights.some((flight) => flight.trip_type === "outbound");
+
+  const hasReturn = flights.some((flight) => flight.trip_type === "return");
+
+  if (hasOutbound && hasReturn) {
+    return "round_trip";
+  }
+
+  if (hasOutbound) {
+    return "one_way";
+  }
+
+  return "multi_city";
+}
+
+/**
+ * Format dữ liệu API -> Order dùng trong frontend.
+ */
+export function mapOrderFromApi(item: any): Order {
+  const flights: OrderFlight[] = item.flights ?? [];
+
+  const outboundFlight = flights.find(
+    (flight) => flight.trip_type === "outbound",
+  );
+
+  const returnFlight = flights.find((flight) => flight.trip_type === "return");
+
+  return {
+    id: String(item.id),
+
+    orderCode: item.order_code,
+
+    status: item.status,
+
+    bookingAt: item.booking_at,
+
+    customerName: item.contact_name,
+
+    customerPhone: item.contact_phone,
+
+    customerEmail: item.contact_email,
+
+    totalAmount: Number(item.total_amount),
+
+    paymentMethod: item.payment_method,
+
+    paymentProofUrl: item.payment_bill_image,
+
+    transferContent: item.transfer_content,
+
+    passengers: item.passengers ?? [],
+
+    flights,
+
+    outboundFlight,
+
+    returnFlight,
+  };
+}

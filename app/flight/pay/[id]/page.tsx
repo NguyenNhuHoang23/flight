@@ -212,6 +212,7 @@ function PaymentContent() {
   const params = useParams<{ id?: string }>();
   const searchParams = useSearchParams();
   const activeBank = accounts.find((bank) => bank.isActive === true);
+  console.log("🚀 ~ PaymentContent ~ activeBank:", activeBank);
   const orderCode =
     (Array.isArray(params?.id) ? params.id[0] : params?.id) ||
     searchParams.get("code") ||
@@ -270,9 +271,7 @@ function PaymentContent() {
 
   const qrValue = activeBank
     ? `https://img.vietqr.io/image/${activeBank.bankName}-${activeBank.accountNumber}-compact2.png` +
-      `?amount=${order.amount}` +
-      `&addInfo=${encodeURIComponent(transferContent)}` +
-      `&accountName=${encodeURIComponent(activeBank.bankName)}`
+      `?accountName=${encodeURIComponent(activeBank.accountHolder)}`
     : "";
 
   const copyText = async (text: string, type: string) => {
@@ -333,7 +332,7 @@ function PaymentContent() {
   const isBusy = isSubmitting || updateOrderBill.isPending;
 
   return (
-    <div className="mx-auto max-w-300 px-3">
+    <div className="mx-auto max-w-5xl px-4 sm:px-0">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
         {/* ================= LEFT ================= */}
         <section className="bg-white">

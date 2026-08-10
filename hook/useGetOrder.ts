@@ -1,19 +1,24 @@
 "use client";
 
-import { Order, OrderStatus } from "@/app/admin/orders/data";
+import { Order, OrderStatus } from "@/components/admin/orders/data";
 import { useCallback, useEffect, useState } from "react";
 
 interface ApiFlight {
   id: number;
   order_id: number;
+
   airline_code: string;
   airline_name: string;
   flight_number: string;
+
   departure_airport: string;
   arrival_airport: string;
+
   departure_at: string;
-  arrival_at: string;
+  arrival_at: string | null;
+
   trip_type: "outbound" | "return" | string;
+
   created_at: string;
   updated_at: string;
 }
@@ -21,10 +26,14 @@ interface ApiFlight {
 interface ApiPassenger {
   id: number;
   order_id: number;
+
   full_name: string;
+
   passenger_type: "adult" | "child" | "infant" | string;
+
   document_type: string | null;
   document_number: string | null;
+  date_of_birth: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,7 +50,7 @@ interface ApiOrder {
 
   total_amount: string | number;
 
-  payment_method: string;
+  payment_method: string | null;
   payment_bill_image: string | null;
   transfer_content: string | null;
 
@@ -56,11 +65,13 @@ interface ApiOrder {
 
 interface PaginationResponse {
   current_page: number;
+
   data: ApiOrder[];
 
   first_page_url: string;
 
   from: number | null;
+
   last_page: number;
 
   last_page_url: string;
@@ -85,20 +96,42 @@ interface OrderApiResponse {
 }
 
 // ======================================================
-// FORMAT DATE
+// FORMAT DATE - GIỮ NGUYÊN GIỜ API
+// ======================================================
+//
+// API:
+// 2026-08-10T22:50:00.000000Z
+//
+// Kết quả:
+// 22:50 10/08/2026
+//
+// KHÔNG new Date()
+// KHÔNG toLocaleString()
+// KHÔNG cộng/trừ timezone
 // ======================================================
 
-function formatDate(date: string) {
-  if (!date) return "";
+function formatDate(date: string | null | undefined) {
+  if (!date) {
+    return "Chưa có";
+  }
 
   try {
-    return new Date(date).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    // Lấy trực tiếp phần ngày giờ từ string API
+    //
+    // 2026-08-10T22:50:00.000000Z
+    //        ↓
+    // 2026-08-10
+    // 22:50
+    //
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+
+    if (!match) {
+      return date;
+    }
+
+    const [, year, month, day, hour, minute] = match;
+
+    return `${hour}:${minute} ${day}/${month}/${year}`;
   } catch {
     return date;
   }
@@ -110,6 +143,7 @@ function formatDate(date: string) {
 
 function mapOrder(order: ApiOrder): Order {
   const flights = order.flights || [];
+
   const passengers = order.passengers || [];
 
   const hasReturnFlight = flights.some(
@@ -117,6 +151,10 @@ function mapOrder(order: ApiOrder): Order {
   );
 
   return {
+    // ==================================================
+    // ORDER
+    // ==================================================
+
     id: order.order_code,
 
     status: order.status,
@@ -137,7 +175,15 @@ function mapOrder(order: ApiOrder): Order {
 
     transferContent: order.transfer_content || "",
 
+    // ==================================================
+    // FLIGHT TYPE
+    // ==================================================
+
     flightType: hasReturnFlight ? "round_trip" : "one_way",
+
+    // ==================================================
+    // PASSENGERS
+    // ==================================================
 
     passengers: passengers.map((passenger) => ({
       name: passenger.full_name,
@@ -152,10 +198,16 @@ function mapOrder(order: ApiOrder): Order {
               : passenger.passenger_type,
 
       passportOrCccd: passenger.document_number || "Chưa có",
+
+      dateOfBirth: passenger.date_of_birth || "Chưa có",
     })),
 
+    // ==================================================
+    // FLIGHTS
+    // ==================================================
+
     flights: flights.map((flight) => ({
-      logo: flight.airline_code,
+      logo: flight.airline_code || "✈️",
 
       airline: flight.airline_name,
 
@@ -165,7 +217,19 @@ function mapOrder(order: ApiOrder): Order {
 
       arrival: flight.arrival_airport,
 
+      // ============================================
+      // GIỜ ĐI
+      // ============================================
+
       departTime: formatDate(flight.departure_at),
+
+      // ============================================
+      // GIỜ ĐẾN
+      // ============================================
+
+      arrivalTime: formatDate(flight.arrival_at),
+
+      seatClass: "Phổ thông",
     })),
   };
 }
@@ -202,9 +266,10 @@ export function useGetOrders(token: string | null) {
   // ====================================================
 
   const fetchOrders = useCallback(
-    async (page = currentPage, limit = perPage) => {
+    async (page = 1, limit = 3) => {
       try {
         setLoading(true);
+
         setError(null);
 
         if (!token) {
@@ -235,7 +300,7 @@ export function useGetOrders(token: string | null) {
         }
 
         // ==================================================
-        // PAGINATION DATA
+        // PAGINATION
         // ==================================================
 
         const pagination = result.data;
@@ -244,7 +309,13 @@ export function useGetOrders(token: string | null) {
           ? pagination.data
           : [];
 
+        // ==================================================
+        // MAP API -> UI
+        // ==================================================
+
         const mappedOrders = apiOrders.map(mapOrder);
+
+        console.log("🚀 MAPPED ORDERS:", mappedOrders);
 
         setOrders(mappedOrders);
 
@@ -278,7 +349,7 @@ export function useGetOrders(token: string | null) {
         setLoading(false);
       }
     },
-    [token, currentPage, perPage],
+    [token],
   );
 
   // ====================================================

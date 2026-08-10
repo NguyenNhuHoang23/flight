@@ -70,7 +70,6 @@ export default function RefundPage() {
           account_number: accountNumber,
           account_holder: accountHolder,
           amount: Number(amount),
-          note: note,
         }),
       });
 
@@ -179,7 +178,16 @@ export default function RefundPage() {
                   required
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md text-base text-gray-900 bg-white"
+                  className="
+    w-full px-3 py-2
+    border border-gray-300
+    rounded-md
+    text-base text-gray-900
+    bg-white
+    focus:outline-none
+    focus:border-[#006837]
+    focus:ring-2 focus:ring-[#006837]
+  "
                   placeholder="MB Bank, Vietcombank..."
                 />
               </div>
@@ -195,7 +203,17 @@ export default function RefundPage() {
                   required
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md text-base text-gray-900 bg-white"
+                  className="
+    w-full px-3 py-2
+    border border-gray-300
+    rounded-md
+    text-base text-gray-900
+    bg-white
+    focus:outline-none
+    focus:border-[#006837]
+    focus:ring-2 focus:ring-[#006837]
+  "
+                  placeholder="VD: 123456789"
                 />
               </div>
 
@@ -212,7 +230,17 @@ export default function RefundPage() {
                   onChange={(e) =>
                     setAccountHolder(e.target.value.toUpperCase())
                   }
-                  className="w-full px-3 py-2 border rounded-md text-base text-gray-900 bg-white uppercase"
+                  className="
+    w-full px-3 py-2
+    border border-gray-300
+    rounded-md
+    text-base text-gray-900
+    bg-white
+    focus:outline-none
+    focus:border-[#006837]
+    focus:ring-2 focus:ring-[#006837]
+  "
+                  placeholder="VD: NGUYEN VAN A"
                 />
               </div>
 
@@ -231,7 +259,17 @@ export default function RefundPage() {
 
                     setAmount(value);
                   }}
-                  className="w-full px-3 py-2 border rounded-md text-base text-gray-900 bg-white font-bold"
+                  placeholder="Ví dụ: 1000000"
+                  className="
+    w-full px-3 py-2
+    border border-gray-300
+    rounded-md
+    text-base text-gray-900
+    bg-white
+    focus:outline-none
+    focus:border-[#006837]
+    focus:ring-2 focus:ring-[#006837]
+  "
                 />
 
                 {amount && (
@@ -239,24 +277,6 @@ export default function RefundPage() {
                     {formatCurrency(amount)} VNĐ
                   </p>
                 )}
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                  Ghi chú
-                </label>
-
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={4}
-                  placeholder="Nhập ghi chú cho yêu cầu hoàn tiền..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#006837] focus:border-[#006837] resize-none"
-                />
-
-                <p className="mt-1 text-xs text-gray-400">
-                  Ví dụ: Hoàn tiền vé chuyến bay đã hủy, vui lòng chuyển khoản
-                  về tài khoản trên.
-                </p>
               </div>
               <button
                 type="submit"

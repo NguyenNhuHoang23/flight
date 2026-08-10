@@ -12,7 +12,7 @@ function LoginContent() {
 
   const redirectPath = searchParams.get("redirect") || "/flight/refund";
 
-  const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -23,7 +23,7 @@ function LoginContent() {
 
     loginMutation.mutate(
       {
-        email: email.trim(),
+        userName: userName.trim(),
         password,
       },
       {
@@ -35,11 +35,11 @@ function LoginContent() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+    <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Header */}
-        <div className="bg-[#006837] p-6 text-white">
-          <h1 className="text-xl font-bold">Đăng Nhập Hệ Thống</h1>
+        <div className="bg-[#006837] px-6 py-5">
+          <h1 className="text-xl font-bold text-white">Đăng Nhập Hệ Thống</h1>
 
           <p className="text-sm text-white/80 mt-1">
             Sử dụng tài khoản được hệ thống cấp
@@ -48,28 +48,29 @@ function LoginContent() {
 
         {/* Form */}
         <form onSubmit={handleLogin} className="p-6 space-y-4">
+          {/* Error */}
           {loginMutation.isError && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-md font-medium">
               {loginMutation.error?.message || "Đăng nhập thất bại"}
             </div>
           )}
 
-          {/* Email */}
+          {/* Username */}
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-              Email
+              Tên đăng nhập
             </label>
 
             <div className="relative">
               <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
 
               <input
-                type="email"
+                type="text"
                 required
-                autoComplete="email"
-                placeholder="Nhập email được cấp"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                placeholder="Nhập tên đăng nhập"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#006837]"
               />
             </div>

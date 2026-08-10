@@ -68,11 +68,10 @@ const getOrderDetail = async (
   );
 
   const data = await response.json();
+  console.log("🚀 ~ getOrderDetail ~ data:", data);
 
   if (!response.ok || !data.success) {
-    throw new Error(
-      data.message || "Không thể lấy chi tiết đơn hàng",
-    );
+    throw new Error(data.message || "Không thể lấy chi tiết đơn hàng");
   }
 
   return data;
