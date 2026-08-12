@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 
-import { Customer, useCustomers } from "@/hook/useCustomers";
+import { useCustomers } from "@/hook/useCustomers";
 import { useAuthStore } from "@/store/auth-store";
 import CustomerTable from "@/components/admin/customer/CustomerTable";
 import CustomerModal from "@/components/admin/customer/CustomerModal";
 import { CustomerFormData } from "@/components/admin/customer/customer-types";
+import { Customer } from "@/components/admin/customer/customer-types";
 
 const INITIAL_FORM: CustomerFormData = {
   username: "",

@@ -291,9 +291,16 @@ export function useGetOrders(token: string | null) {
           },
         );
 
+              if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
+
+        window.location.href = "/admin/login";
+
+        return [];
+      }
+
         const result: OrderApiResponse = await response.json();
 
-        console.log("🚀 GET ORDERS:", result);
 
         if (!response.ok || !result.success) {
           throw new Error(result.message || "Không thể lấy danh sách đơn hàng");

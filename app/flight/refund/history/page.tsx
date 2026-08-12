@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useRefundHistory } from "@/hook/useRefundHistory";
 import { useCustomerAuthStore } from "@/store/customer-auth-store";
+import { useClientRefunds } from "@/hook/useRefundClient";
+import page from "../page";
 
 // Kiểu dữ liệu lịch sử hoàn tiền (Cập nhật field note)
 interface RefundRecord {
@@ -23,66 +25,57 @@ interface RefundRecord {
   accountNumber: string;
   accountHolder: string;
   amount: number;
-  status: "pending" | "completed" | "rejected";
+  status: "pending" | "approved" | "rejected";
+  date: string;
+  time: string;
+  ampm: "AM" | "PM";
   createdAt: string;
-  note?: string; // Ghi chú từ người dùng hoặc phản hồi từ hệ thống
+  note?: string | null;
 }
 
-// Mock data lịch sử (Cập nhật các ghi chú mẫu)
-const MOCK_REFUND_HISTORY: RefundRecord[] = [
-  {
-    id: "RF839201",
-    bankName: "MB Bank",
-    accountNumber: "0123456789",
-    accountHolder: "NGUYEN VAN A",
-    amount: 1500000,
-    status: "completed",
-    createdAt: "05/08/2026 14:30",
-    note: "Hoàn tiền vé máy bay chặng HAN-PQC do hủy chuyến",
-  },
-  {
-    id: "RF839188",
-    bankName: "Vietcombank",
-    accountNumber: "9988776655",
-    accountHolder: "NGUYEN VAN A",
-    amount: 2350000,
-    status: "pending",
-    createdAt: "04/08/2026 09:15",
-    note: "Yêu cầu rút tiền dư trong tài khoản",
-  },
-  {
-    id: "RF837512",
-    bankName: "Techcombank",
-    accountNumber: "19031234567",
-    accountHolder: "NGUYEN VAN A",
-    amount: 850000,
-    status: "rejected",
-    createdAt: "01/08/2026 16:45",
-    note: "Từ chối: Sai tên chủ tài khoản ngân hàng",
-  },
-];
 
 export default function RefundHistoryPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const user = useCustomerAuthStore((state) => state.user);
+  const user = useCustomerAuthStore((state) => {
+    return state.user;
+  });
+    console.log("🚀 ~ RefundHistoryPage ~ user:", user)
+  
   const accessToken = useCustomerAuthStore((state) => state.accessToken);
 
   const hydrated = useCustomerAuthStore((state) => state.hydrated);
 
-  const {
-    data: historyList = [],
-    isLoading,
-    isFetching,
-    error,
-    refetch,
-  } = useRefundHistory();
+const [page, setPage] = useState(1);
+const [perPage, setPerPage] = useState(10);
 
-  const formatMoney = (value: number) => {
-    return new Intl.NumberFormat("vi-VN").format(value) + " đ";
-  };
+const {
+  data: historyResponse,
+  isLoading,
+  isFetching,
+  refetch,
+  error,
+} = useClientRefunds(
+  accessToken || "",
+  page,
+  perPage
+);
+
+const historyList = historyResponse?.data ?? [];
+
+const pagination = historyResponse?.pagination;
+
+const formatMoney = (value: string | number) => {
+  const amount = Number(value);
+
+  if (Number.isNaN(amount)) {
+    return "0 đ";
+  }
+
+  return new Intl.NumberFormat("vi-VN").format(amount) + " đ";
+};
 
   useEffect(() => {
     if (!hydrated) return;
@@ -150,14 +143,14 @@ export default function RefundHistoryPage() {
       </div>
     );
   }
-  const filteredList = historyList.filter((item) => {
+  const filteredList = historyList?.filter((item) => {
     const term = searchTerm.toLowerCase();
 
     const matchSearch =
       String(item.id).toLowerCase().includes(term) ||
-      item.accountNumber.toLowerCase().includes(term) ||
-      item.bankName.toLowerCase().includes(term) ||
-      item.accountHolder.toLowerCase().includes(term) ||
+      item.account_number.toLowerCase().includes(term) ||
+      item.bank_name.toLowerCase().includes(term) ||
+      item.account_holder.toLowerCase().includes(term) ||
       (item.note ?? "").toLowerCase().includes(term);
 
     const matchStatus = statusFilter === "all" || item.status === statusFilter;
@@ -183,7 +176,7 @@ export default function RefundHistoryPage() {
                 Lịch Sử Hoàn Tiền / Rút Tiền
               </h1>
               <p className="text-xs text-gray-500">
-                Tài khoản: <b className="text-gray-700">{user?.username}</b>
+                Tài khoản: <b className="text-gray-700">{user?.userName}</b>
               </p>
             </div>
           </div>
@@ -205,7 +198,10 @@ export default function RefundHistoryPage() {
               type="text"
               placeholder="Tìm theo Mã GD, Ngân hàng, STK, Ghi chú..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+  setSearchTerm(e.target.value);
+  setPage(1);
+}}
               className="w-full pl-9 pr-3 py-2 sm:py-1.5 border rounded-md text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#006837]"
             />
           </div>
@@ -214,16 +210,21 @@ export default function RefundHistoryPage() {
             <span className="text-xs font-semibold text-gray-600 whitespace-nowrap">
               Trạng thái:
             </span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 sm:py-1.5 border rounded-md text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#006837] bg-white cursor-pointer"
-            >
-              <option value="all">Tất cả</option>
-              <option value="pending">Đang xử lý</option>
-              <option value="completed">Thành công</option>
-              <option value="rejected">Từ chối</option>
-            </select>
+       <select
+  value={statusFilter}
+  onChange={(e) => {
+    setStatusFilter(e.target.value);
+
+    // Khi đổi filter thì quay về trang 1
+    setPage(1);
+  }}
+  className="w-full sm:w-auto px-3 py-2 sm:py-1.5 border rounded-md text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#006837] bg-white cursor-pointer"
+>
+  <option value="all">Tất cả</option>
+  <option value="pending">Đang xử lý</option>
+  <option value="approved">Thành công</option>
+  <option value="rejected">Từ chối</option>
+</select>
           </div>
         </div>
 
@@ -243,29 +244,19 @@ export default function RefundHistoryPage() {
 
                   <div className="text-xs space-y-1">
                     <div className="font-medium text-gray-800">
-                      {item.bankName} -{" "}
+                      {item.bank_name} -{" "}
                       <span className="text-blue-600 font-mono font-semibold">
-                        {item.accountNumber}
+                        {item.account_number}
                       </span>
                     </div>
                     <div className="text-gray-500 uppercase">
-                      {item.accountHolder}
+                      {item.account_holder}
                     </div>
                   </div>
 
-                  {/* Khối Ghi Chú Mobile */}
-                  {item.note && (
-                    <div className="text-xs bg-gray-50 p-2 rounded border border-gray-100 text-gray-600 flex items-start gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-                      <span>
-                        <b className="text-gray-700">Ghi chú:</b> {item.note}
-                      </span>
-                    </div>
-                  )}
-
                   <div className="flex justify-between items-end pt-1">
                     <span className="text-[11px] text-gray-400">
-                      {item.createdAt}
+                      {item.created_at}
                     </span>
                     <span className="font-bold text-red-600 text-sm">
                       {formatMoney(item.amount)}
@@ -289,32 +280,31 @@ export default function RefundHistoryPage() {
                   <th className="py-3 px-4">Thông Tin Nhận Tiền</th>
                   <th className="py-3 px-4 text-right">Số Tiền</th>
                   <th className="py-3 px-4 text-center">Trạng Thái</th>
-                  <th className="py-3 px-4">Ghi Chú</th>
                   <th className="py-3 px-4 text-center">Thời Gian</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredList.length > 0 ? (
-                  filteredList.map((item) => (
+                  filteredList.map((item, index) => (
                     <tr
                       key={item.id}
                       className="hover:bg-gray-50/80 transition text-gray-800"
                     >
                       {/* Mã GD */}
                       <td className="py-3.5 px-4 font-bold text-[#006837] whitespace-nowrap">
-                        {item.id}
+                        {index}
                       </td>
 
                       {/* Thông tin ngân hàng */}
                       <td className="py-3.5 px-4 space-y-0.5">
                         <div className="font-semibold text-gray-900">
-                          {item.bankName} -{" "}
+                          {item.bank_name} -{" "}
                           <span className="text-blue-600 font-mono">
-                            {item.accountNumber}
+                            {item.account_number}
                           </span>
                         </div>
                         <div className="text-[11px] text-gray-500 uppercase">
-                          {item.accountHolder}
+                          {item.account_holder}
                         </div>
                       </td>
 
@@ -328,19 +318,9 @@ export default function RefundHistoryPage() {
                         <StatusBadge status={item.status} />
                       </td>
 
-                      {/* Cột Ghi Chú mới */}
-                      <td className="py-3.5 px-4 max-w-[220px]">
-                        <span
-                          className="text-xs text-gray-600 line-clamp-2"
-                          title={item.note || "-"}
-                        >
-                          {item.note || "-"}
-                        </span>
-                      </td>
-
                       {/* Thời gian */}
                       <td className="py-3.5 px-4 text-center text-xs text-gray-500 whitespace-nowrap">
-                        {item.createdAt}
+                        {item.created_at}
                       </td>
                     </tr>
                   ))
@@ -357,6 +337,84 @@ export default function RefundHistoryPage() {
               </tbody>
             </table>
           </div>
+          {pagination && pagination.total > 0 && (
+  <div className="border-t border-gray-200 bg-white px-4 py-3">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+
+      {/* Thông tin */}
+      <div className="text-xs sm:text-sm text-gray-500">
+        Hiển thị{" "}
+        <span className="font-semibold text-gray-700">
+          {pagination.from}
+        </span>{" "}
+        -{" "}
+        <span className="font-semibold text-gray-700">
+          {pagination.to}
+        </span>{" "}
+        /{" "}
+        <span className="font-semibold text-gray-700">
+          {pagination.total}
+        </span>{" "}
+        yêu cầu
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center gap-1">
+
+        {/* Trang trước */}
+        <button
+          type="button"
+          disabled={pagination.current_page <= 1 || isFetching}
+          onClick={() => {
+            setPage((prev) => Math.max(prev - 1, 1));
+          }}
+          className="px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Trước
+        </button>
+
+        {/* Số trang */}
+        <div className="flex items-center gap-1">
+          {Array.from(
+            { length: pagination.last_page },
+            (_, index) => index + 1
+          ).map((pageNumber) => (
+            <button
+              key={pageNumber}
+              type="button"
+              disabled={isFetching}
+              onClick={() => setPage(pageNumber)}
+              className={`min-w-[34px] px-2 py-1.5 text-xs sm:text-sm rounded-md border transition ${
+                pageNumber === pagination.current_page
+                  ? "bg-[#006837] text-white border-[#006837]"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              } disabled:cursor-not-allowed`}
+            >
+              {pageNumber}
+            </button>
+          ))}
+        </div>
+
+        {/* Trang sau */}
+        <button
+          type="button"
+          disabled={
+            pagination.current_page >= pagination.last_page ||
+            isFetching
+          }
+          onClick={() => {
+            setPage((prev) =>
+              Math.min(prev + 1, pagination.last_page)
+            );
+          }}
+          className="px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Sau
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </div>
     </main>
@@ -364,15 +422,20 @@ export default function RefundHistoryPage() {
 }
 
 /* Badge hiển thị trạng thái */
-function StatusBadge({ status }: { status: RefundRecord["status"] }) {
+function StatusBadge({
+  status,
+}: {
+  status: RefundRecord["status"];
+}) {
   switch (status) {
-    case "completed":
+    case "approved":
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-700">
           <CheckCircle2 size={13} />
           Thành công
         </span>
       );
+
     case "pending":
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700">
@@ -380,6 +443,7 @@ function StatusBadge({ status }: { status: RefundRecord["status"] }) {
           Đang xử lý
         </span>
       );
+
     case "rejected":
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
@@ -387,5 +451,8 @@ function StatusBadge({ status }: { status: RefundRecord["status"] }) {
           Từ chối
         </span>
       );
+
+    default:
+      return null;
   }
 }

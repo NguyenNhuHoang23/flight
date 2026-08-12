@@ -70,15 +70,18 @@ const formatRefundTimeForApi = (value?: string | null) => {
 
 export default function GroupedRefundPage() {
   const token = useAuthStore((state) => state.accessToken);
-  const { data, isLoading, isError, error, refetch } = useRefunds(token || "");
-
+  const [page, setPage] = useState(1);
+const [perPage, setPerPage] = useState(10);
+  const { data, isLoading, isError, error, refetch } = useRefunds(token || "", page, perPage);
+const pagination = data?.pagination;
   const { mutate: createRefund, isPending: isCreatingRefund } = useMutation({
     mutationFn: async ({
       userId,
       command,
     }: {
       userId: string;
-      command: RefundCommand;
+      command: Omit<RefundCommand, "id">;
+
     }) => {
       console.log("🚀 ~ GroupedRefundPage ~ command:", command);
       if (!token) {
@@ -155,6 +158,52 @@ export default function GroupedRefundPage() {
     },
   });
 
+  const {
+  mutate: deleteRefund,
+  isPending: isDeletingRefund,
+} = useMutation({
+  mutationFn: async (commandId: string) => {
+    if (!token) {
+      throw new Error("Bạn chưa đăng nhập");
+    }
+
+    const response = await fetch(`/api/admin/refunds/${commandId}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Không thể xóa lệnh hoàn tiền");
+    }
+
+    return data;
+  },
+});
+
+const handleDelete = (commandId: string) => {
+  if (!confirm("Bạn có chắc chắn muốn xóa lệnh hoàn tiền này?")) {
+    return;
+  }
+
+  deleteRefund(commandId, {
+    onSuccess: () => {
+      refetch();
+    },
+    onError: (error) => {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Không thể xóa lệnh hoàn tiền",
+      );
+    },
+  });
+};
+
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useMutation({
     mutationFn: async ({
       commandId,
@@ -199,6 +248,36 @@ export default function GroupedRefundPage() {
     },
   });
 
+  const { mutate: duplicateRefund, isPending: isDuplicatingRefund } =
+  useMutation({
+    mutationFn: async (commandId: string) => {
+      if (!token) {
+        throw new Error("Bạn chưa đăng nhập");
+      }
+
+      const response = await fetch(
+        `/api/admin/refunds/${commandId}/duplicate`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Không thể nhân bản lệnh hoàn tiền",
+        );
+      }
+
+      return data;
+    },
+  });
+
   const buildRefundPayload = (command: RefundCommand) => ({
     bank_name: command.bankName,
     account_holder: command.accountHolder,
@@ -213,7 +292,6 @@ export default function GroupedRefundPage() {
 
   const customerGroups = useMemo<CustomerGroup[]>(() => {
     const refunds = data?.data ?? [];
-
     const groups = new Map<string, CustomerGroup>();
 
     refunds.forEach((refund) => {
@@ -223,7 +301,7 @@ export default function GroupedRefundPage() {
         groups.set(userId, {
           userId,
           username:
-            refund.user?.name || refund.user?.email || `User #${userId}`,
+            refund.user?.userName || refund.user?.email || `User #${userId}`,
           commands: [],
         });
       }
@@ -258,6 +336,9 @@ export default function GroupedRefundPage() {
 
     return Array.from(groups.values());
   }, [data, draftCommands]);
+
+    console.log("customerGroups" , customerGroups);
+  
 
   const getMergedCommand = (commandId: string) => {
     const found = customerGroups
@@ -335,36 +416,21 @@ export default function GroupedRefundPage() {
    * ============================
    */
 
-  const handleAddCommand = (userId: string, commandId: string) => {
-    const sourceCommand = getMergedCommand(commandId);
+const handleAddCommand = (commandId: string) => {
+  duplicateRefund(commandId, {
+    onSuccess: () => {
+      refetch();
+    },
 
-    if (!sourceCommand) {
-      return;
-    }
-
-    createRefund(
-      {
-        userId,
-        command: {
-          ...sourceCommand,
-          time: formatRefundTimeForApi(sourceCommand.time),
-          ampm: sourceCommand.ampm || "AM",
-        },
-      },
-      {
-        onSuccess: () => {
-          refetch();
-        },
-        onError: (error) => {
-          alert(
-            error instanceof Error
-              ? error.message
-              : "Không thể tạo lệnh hoàn tiền mới",
-          );
-        },
-      },
-    );
-  };
+    onError: (error) => {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Không thể nhân bản lệnh hoàn tiền",
+      );
+    },
+  });
+};
 
   /**
    * ============================
@@ -531,29 +597,69 @@ export default function GroupedRefundPage() {
 
       <div className="space-y-6">
         {customerGroups.map((group) => (
-          <RefundCustomerGroup
-            key={group.userId}
-            group={group}
-            savedCommandId={savedCommandId}
-            isCreating={
-              isCreatingRefund || isUpdatingRefund || isUpdatingStatus
-            }
-            onChange={(commandId, field, value) =>
-              updateCommand(group.userId, commandId, field, value)
-            }
-            onTimeChange={(commandId, newTime, newAmPm) =>
-              handleTimeChange(group.userId, commandId, newTime, newAmPm)
-            }
-            onAddCommand={(commandId) =>
-              handleAddCommand(group.userId, commandId)
-            }
-            onSave={handleSave}
-            onStatusChange={(commandId, status) =>
-              handleStatusChange(group.userId, commandId, status)
-            }
-          />
+        <RefundCustomerGroup
+  key={group.userId}
+  group={group}
+  savedCommandId={savedCommandId}
+  isCreating={
+    isCreatingRefund || isUpdatingRefund || isUpdatingStatus || isDeletingRefund
+  }
+  onChange={(commandId, field, value) =>
+    updateCommand(group.userId, commandId, field, value)
+  }
+  onTimeChange={(commandId, newTime, newAmPm) =>
+    handleTimeChange(group.userId, commandId, newTime, newAmPm)
+  }
+onAddCommand={handleAddCommand}
+  onSave={handleSave}
+  onStatusChange={(commandId, status) =>
+    handleStatusChange(group.userId, commandId, status)
+  }
+  onDelete={handleDelete}
+  onCancel={(commandId) =>
+    handleStatusChange(
+      group.userId,
+      commandId,
+      "rejected"
+    )
+  } 
+/>
         ))}
       </div>
+      <div className="flex items-center justify-between">
+  <div className="text-sm text-gray-500">
+    {pagination?.from && pagination?.to
+      ? `Hiển thị ${pagination.from} - ${pagination.to} / ${pagination.total}`
+      : "Không có dữ liệu"}
+  </div>
+
+  <div className="flex items-center gap-2">
+    <button
+      type="button"
+      disabled={!pagination || pagination.current_page <= 1}
+      onClick={() => setPage((prev) => prev - 1)}
+      className="rounded-md border border-gray-300 text-neutral-900 text-sm px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Trước
+    </button>
+
+    <span className="text-sm text-gray-700">
+      Trang {pagination?.current_page ?? 1} /{" "}
+      {pagination?.last_page ?? 1}
+    </span>
+
+    <button
+      type="button"
+      disabled={
+        !pagination || pagination.current_page >= pagination.last_page
+      }
+      onClick={() => setPage((prev) => prev + 1)}
+      className="rounded-md border border-gray-300 text-neutral-900 text-sm px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Sau
+    </button>
+  </div>
+</div>
     </div>
   );
 }

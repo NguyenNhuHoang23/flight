@@ -9,7 +9,7 @@ interface BankPaymentInfoProps {
     accountHolder: string;
   };
   amount: number;
-  transferContent: string;
+  transferContent: string | null;
   copied: string;
   onCopy: (text: string, type: string) => void;
 }
@@ -28,7 +28,7 @@ export default function BankPaymentInfo({
   const qrValue = bank
     ? `https://img.vietqr.io/image/${bank.bankName}-${bank.accountNumber}-compact2.png` +
       `?amount=${amount}` +
-      `&addInfo=${encodeURIComponent(transferContent)}` +
+      `&addInfo=${encodeURIComponent(transferContent ?? "")}` +
       `&accountName=${encodeURIComponent(bank.bankName)}`
     : "";
 
@@ -87,7 +87,7 @@ export default function BankPaymentInfo({
 
               <BankRow label="Số tiền" value={formatMoney(amount)} highlight />
 
-              <BankRow label="Nội dung" value={transferContent} />
+              <BankRow label="Nội dung" value={transferContent ?? ""} />
             </div>
 
             <div className="mt-5 flex gap-2 rounded-md border border-orange-200 bg-orange-50 p-3 text-xs text-orange-800">

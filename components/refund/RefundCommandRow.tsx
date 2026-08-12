@@ -1,7 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { RefundCommand } from "./refund-types";
+import {
+  convertRefundDateTimeToVietnam,
+  convertVietnamDateTimeToUtc,
+} from "./refund-datetime";
+import RefundBankInfo from "./RefundBankInfo";
 
 const formatRefundTimeInput = (value: string) => {
   const trimmed = value.replace(/[^\d:]/g, "").trim();
@@ -46,9 +51,9 @@ const formatRefundTimeInput = (value: string) => {
   return `${String(safeHour).padStart(2, "0")}:${String(safeMinute).padStart(2, "0")}`;
 };
 
-import RefundBankInfo from "./RefundBankInfo";
-
 interface RefundCommandRowProps {
+  index: number;
+
   command: RefundCommand;
 
   saved: boolean;
@@ -67,9 +72,12 @@ interface RefundCommandRowProps {
   onSave: () => void;
 
   onStatusChange: (status: "approved" | "rejected") => void;
+  onDelete: () => void;
+  onCancel: () => void;
 }
 
 export default function RefundCommandRow({
+  index,
   command,
   saved,
   isCreating = false,
@@ -78,9 +86,88 @@ export default function RefundCommandRow({
   onAdd,
   onSave,
   onStatusChange,
+  onDelete,
+  onCancel,
 }: RefundCommandRowProps) {
+  const vietnamDateTime = useMemo(
+    () =>
+      convertRefundDateTimeToVietnam(
+        command.date,
+        command.time,
+        command.ampm,
+      ),
+    [command.date, command.time, command.ampm],
+  );
+
+  const commitVietnamDateTime = (
+    nextDate: string,
+    nextTime: string,
+    nextAmPm: "AM" | "PM",
+  ) => {
+    const utc = convertVietnamDateTimeToUtc(nextDate, nextTime, nextAmPm);
+
+    if (utc.date !== command.date) {
+      onChange("date", utc.date);
+    }
+
+    onTimeChange(utc.time, utc.ampm);
+  };
+
+  const handleVietnamTimeChange = (rawValue: string) => {
+    const nextTime = formatRefundTimeInput(rawValue);
+    const hour = Number(nextTime.split(":")[0] || 0);
+    const nextAmPm: "AM" | "PM" = hour >= 12 ? "PM" : "AM";
+
+    commitVietnamDateTime(vietnamDateTime.date, nextTime, nextAmPm);
+  };
+
+  const handleVietnamAmPmChange = (nextAmPm: "AM" | "PM") => {
+    const [hourText = "0", minuteText = "00"] =
+      vietnamDateTime.time.split(":");
+    let hour = Number(hourText);
+
+    if (Number.isNaN(hour)) hour = 0;
+
+    const hour12 = hour % 12;
+    const nextHour = nextAmPm === "PM" ? hour12 + 12 : hour12;
+    const nextTime = `${String(nextHour).padStart(2, "0")}:${minuteText.padStart(2, "0")}`;
+
+    commitVietnamDateTime(vietnamDateTime.date, nextTime, nextAmPm);
+  };
+
+  const handleVietnamDateChange = (nextDate: string) => {
+    commitVietnamDateTime(
+      nextDate,
+      vietnamDateTime.time,
+      vietnamDateTime.ampm,
+    );
+  };
+
   return (
     <tr className="hover:bg-slate-50/80 align-top">
+      {/* =========================
+          STT (theo từng user)
+      ========================= */}
+
+      <td className="py-3 px-3 text-center align-middle">
+        <span
+          className="
+            inline-flex
+            items-center
+            justify-center
+            min-w-7
+            h-7
+            rounded-full
+            bg-blue-100
+            text-blue-700
+            text-xs
+            font-bold
+          "
+        >
+          {index}
+        </span>
+      </td>
+
       {/* =========================
           THÔNG TIN NGÂN HÀNG
       ========================= */}
@@ -119,7 +206,7 @@ export default function RefundCommandRow({
       </td>
 
       {/* =========================
-          THỜI GIAN
+          THỜI GIAN (giờ Việt Nam)
       ========================= */}
 
       <td className="py-3 px-4 space-y-1">
@@ -129,10 +216,8 @@ export default function RefundCommandRow({
             type="text"
             placeholder="08:00"
             maxLength={5}
-            value={command.time}
-            onChange={(e) =>
-              onTimeChange(formatRefundTimeInput(e.target.value), undefined)
-            }
+            value={vietnamDateTime.time}
+            onChange={(e) => handleVietnamTimeChange(e.target.value)}
             className="
               w-20
               text-center
@@ -151,9 +236,9 @@ export default function RefundCommandRow({
 
           {/* AM / PM */}
           <select
-            value={command.ampm}
+            value={vietnamDateTime.ampm}
             onChange={(e) =>
-              onTimeChange(undefined, e.target.value as "AM" | "PM")
+              handleVietnamAmPmChange(e.target.value as "AM" | "PM")
             }
             className={`
               border
@@ -165,7 +250,7 @@ export default function RefundCommandRow({
               cursor-pointer
 
               ${
-                command.ampm === "PM"
+                vietnamDateTime.ampm === "PM"
                   ? "bg-amber-100 text-amber-800 border-amber-300"
                   : "bg-sky-100 text-sky-800 border-sky-300"
               }
@@ -180,8 +265,8 @@ export default function RefundCommandRow({
         {/* NGÀY */}
         <input
           type="date"
-          value={command.date}
-          onChange={(e) => onChange("date", e.target.value)}
+          value={vietnamDateTime.date}
+          onChange={(e) => handleVietnamDateChange(e.target.value)}
           className="
             w-full
             border border-slate-300
@@ -277,7 +362,7 @@ export default function RefundCommandRow({
               {/* HỦY */}
               <button
                 type="button"
-                onClick={() => onStatusChange("rejected")}
+                onClick={onCancel}
                 className="
                   flex-1
                   bg-rose-500
@@ -309,6 +394,22 @@ export default function RefundCommandRow({
               "
             >
               {saved ? "✓ Đã lưu" : "Lưu"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete()}
+              className="
+                w-full
+                bg-rose-500
+                hover:bg-rose-600
+                text-white
+                font-medium
+                py-0.5 px-2
+                rounded
+                text-[10px]
+              "
+            >
+              {saved ? "✓ Đã xóa" : "Xóa"}
             </button>
           </>
         ) : (

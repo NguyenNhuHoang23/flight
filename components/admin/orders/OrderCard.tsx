@@ -8,7 +8,33 @@ interface OrderCardProps {
   onViewBill: (url: string) => void;
   onPrintTicket: (order: Order) => void;
 }
+export const formatUtcToVietnam = (
+  value?: string | null,
+) => {
+  if (!value) return "";
 
+  const match = value.match(
+    /^(\d{2}):(\d{2}) (\d{2})\/(\d{2})\/(\d{4})$/,
+  );
+
+  if (!match) return value;
+
+  const [, hour, minute, day, month, year] = match;
+
+  const date = new Date(
+    `${year}-${month}-${day}T${hour}:${minute}:00Z`,
+  );
+
+  return date.toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour12: false,
+  });
+};
 export default function OrderCard({
   order,
   index,
@@ -43,7 +69,8 @@ export default function OrderCard({
           </div>
 
           <div className="text-xs text-slate-500">
-            🕒 <span className="font-medium">{order.createdAt}</span>
+            🕒 <span className="font-medium">    {formatUtcToVietnam(order.createdAt)}
+            </span>
           </div>
         </div>
 
@@ -102,7 +129,7 @@ export default function OrderCard({
             <div className="text-[11px] text-slate-600">
               📝 ND chuyển khoản:{" "}
               <span className="font-mono font-bold text-sky-700">
-                VU794TicKetJ0.
+                {order.transferContent}
               </span>
             </div>
 

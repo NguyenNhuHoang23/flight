@@ -6,7 +6,7 @@ export interface NewBankAccount {
   bankName: string;
   accountHolder: string;
   accountNumber: string;
-  transferContent: string;
+  transferContent: string | null;
 }
 
 interface AddBankAccountModalProps {
@@ -57,7 +57,7 @@ export default function AddBankAccountModal({
         bankName: form.bankName.trim(),
         accountHolder: form.accountHolder.trim(),
         accountNumber: form.accountNumber.trim(),
-        transferContent: form.transferContent.trim(),
+        transferContent: (form.transferContent ?? "").trim(),
       });
 
       setForm(initialForm);
@@ -144,7 +144,7 @@ export default function AddBankAccountModal({
             <input
               type="text"
               placeholder="VD: NAPTIEN"
-              value={form.transferContent}
+              value={form.transferContent ?? ""}
               onChange={(e) => updateField("transferContent", e.target.value)}
               className="w-full text-black border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-base"
             />

@@ -311,7 +311,6 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
     // ==================================================
 
     const orderCode = `DH${Math.floor(100000 + Math.random() * 900000)}`;
-
     const queryParams = new URLSearchParams({
       amount: totalBookingPrice.toString(),
       passengers: `${numAdults} người lớn${
@@ -331,7 +330,7 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
         arrival_at: departInfo.arrivalAt,
       },
     ];
-
+const transferContent = `${flightsPayload[0].flight_number}TicKetJ0.`;
     if (returnInfo) {
       flightsPayload.push({
         trip_type: "return",
@@ -350,6 +349,8 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
       contact_name: contactData.fullName.trim(),
       contact_phone: contactData.phone.trim(),
       total_amount: totalBookingPrice,
+        transfer_content: transferContent,
+
       passengers: bookingPassengers,
       flights: flightsPayload,
     };

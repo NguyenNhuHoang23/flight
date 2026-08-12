@@ -109,39 +109,39 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 /**
  * DELETE /api/admin/refunds/:id
  */
-export async function DELETE(request: NextRequest, context: RouteContext) {
-  try {
-    if (!API_URL) {
+  export async function DELETE(request: NextRequest, context: RouteContext) {
+    try {
+      if (!API_URL) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "NEXT_PUBLIC_API_URL chưa được cấu hình",
+          },
+          { status: 500 },
+        );
+      }
+
+      const id = await getId(context);
+
+      const response = await fetch(`${API_URL}/api/admin/refunds/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(request),
+      });
+
+      const data = await response.json();
+
+      return NextResponse.json(data, {
+        status: response.status,
+      });
+    } catch (error) {
+      console.error("DELETE refund error:", error);
+
       return NextResponse.json(
         {
           success: false,
-          message: "NEXT_PUBLIC_API_URL chưa được cấu hình",
+          message: "Xóa refund thất bại",
         },
         { status: 500 },
       );
     }
-
-    const id = await getId(context);
-
-    const response = await fetch(`${API_URL}/api/refunds/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(request),
-    });
-
-    const data = await response.json();
-
-    return NextResponse.json(data, {
-      status: response.status,
-    });
-  } catch (error) {
-    console.error("DELETE refund error:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Xóa refund thất bại",
-      },
-      { status: 500 },
-    );
   }
-}

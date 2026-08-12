@@ -20,6 +20,7 @@ export default function CustomerTable({
   onEdit,
   onDelete,
 }: CustomerTableProps) {
+  console.log("🚀 ~ CustomerTable ~ customers:", customers)
   const formatMoney = (value: string | number | null) => {
     return Number(value || 0).toLocaleString("vi-VN") + " ₫";
   };

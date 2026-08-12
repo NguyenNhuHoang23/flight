@@ -27,7 +27,12 @@ export default function ClientLayoutProvider({
   const isAdminRoute = pathname?.startsWith("/admin");
 
   if (isAdminRoute) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <Toaster position="top-right" richColors />
+      </>
+    );
   }
 
   const PHONE_NUMBER = "0123456789";

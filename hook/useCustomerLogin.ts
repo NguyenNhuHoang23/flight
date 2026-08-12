@@ -61,7 +61,7 @@ export function useCustomerLogin() {
         );
       }
 
-      login(user, access_token);
+      login(user as Parameters<typeof login>[0], access_token);
     },
   });
 }

@@ -218,7 +218,7 @@ export default function AdminAirlineSalePage() {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
-          {error}
+          {error instanceof Error ? error.message : String(error)}
         </div>
       </div>
     );

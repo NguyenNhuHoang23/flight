@@ -2,88 +2,54 @@ export type FlightType = "one_way" | "round_trip" | "multi_city";
 
 export type OrderStatus = "pending" | "confirmed" | "cancelled";
 
+/** UI passenger shape dùng trong danh sách đơn hàng */
 export interface Passenger {
-  id: number;
-  order_id: number;
-  full_name: string;
-  passenger_type: "adult" | "child" | "infant";
-  document_type: string | null;
-  document_number: string | null;
-  created_at: string;
-  updated_at: string;
+  name: string;
+  type: string;
+  passportOrCccd: string;
+  dateOfBirth: string;
 }
 
+/** UI flight shape dùng trong danh sách đơn hàng */
 export interface OrderFlight {
-  id: number;
-  order_id: number;
-
-  // outbound = chiều đi
-  // return = chiều về
-  trip_type: "outbound" | "return";
-
-  airline_name: string;
-  airline_code: string | null;
-  flight_number: string;
-
-  departure_airport: string;
-  arrival_airport: string;
-
-  departure_at: string | null;
-  arrival_at: string | null;
-
-  created_at: string;
-  updated_at: string;
+  logo: string;
+  airline: string;
+  flightNumber: string;
+  departure: string;
+  arrival: string;
+  departTime: string;
+  arrivalTime: string;
+  seatClass: string;
 }
 
 export interface Order {
   id: string;
-
-  // Mã đơn hàng thực tế từ API
-  orderCode: string;
-
   status: OrderStatus;
-
-  // Thời gian đặt đơn
-  bookingAt: string;
-
-  // Thông tin người liên hệ
+  createdAt: string;
   customerName: string;
   customerPhone: string;
   customerEmail: string | null;
-
-  // Thanh toán
   totalAmount: number;
   paymentMethod: string | null;
   paymentProofUrl?: string | null;
   transferContent: string | null;
-
-  // Hành khách
+  flightType: FlightType;
   passengers: Passenger[];
-
-  // Chuyến bay
   flights: OrderFlight[];
-
-  // Dùng trực tiếp cho UI
-  outboundFlight?: OrderFlight;
-  returnFlight?: OrderFlight;
 }
 
-/**
- * Chuyển passenger_type từ API
- * adult / child / infant
- * sang text hiển thị tiếng Việt.
- */
-export function getPassengerTypeLabel(
-  type: Passenger["passenger_type"],
-): string {
+export function getPassengerTypeLabel(type: string): string {
   switch (type) {
     case "adult":
+    case "Người lớn":
       return "Người lớn";
 
     case "child":
+    case "Trẻ em":
       return "Trẻ em";
 
     case "infant":
+    case "Em bé":
       return "Em bé";
 
     default:
@@ -91,66 +57,60 @@ export function getPassengerTypeLabel(
   }
 }
 
-/**
- * Xác định loại chuyến bay từ danh sách flights.
- */
 export function getFlightType(flights: OrderFlight[]): FlightType {
-  const hasOutbound = flights.some((flight) => flight.trip_type === "outbound");
-
-  const hasReturn = flights.some((flight) => flight.trip_type === "return");
-
-  if (hasOutbound && hasReturn) {
+  if (flights.length > 1) {
     return "round_trip";
   }
 
-  if (hasOutbound) {
-    return "one_way";
-  }
-
-  return "multi_city";
+  return "one_way";
 }
 
 /**
- * Format dữ liệu API -> Order dùng trong frontend.
+ * Format dữ liệu API -> Order dùng trong frontend (UI shape).
  */
 export function mapOrderFromApi(item: any): Order {
-  const flights: OrderFlight[] = item.flights ?? [];
-
-  const outboundFlight = flights.find(
-    (flight) => flight.trip_type === "outbound",
+  const flights = item.flights ?? [];
+  const passengers = item.passengers ?? [];
+  const hasReturn = flights.some(
+    (flight: any) => flight.trip_type === "return",
   );
 
-  const returnFlight = flights.find((flight) => flight.trip_type === "return");
-
   return {
-    id: String(item.id),
-
-    orderCode: item.order_code,
-
+    id: String(item.order_code ?? item.id),
     status: item.status,
-
-    bookingAt: item.booking_at,
-
-    customerName: item.contact_name,
-
-    customerPhone: item.contact_phone,
-
-    customerEmail: item.contact_email,
-
-    totalAmount: Number(item.total_amount),
-
-    paymentMethod: item.payment_method,
-
-    paymentProofUrl: item.payment_bill_image,
-
-    transferContent: item.transfer_content,
-
-    passengers: item.passengers ?? [],
-
-    flights,
-
-    outboundFlight,
-
-    returnFlight,
+    createdAt: item.created_at ?? item.booking_at ?? "",
+    customerName: item.contact_name ?? "",
+    customerPhone: item.contact_phone ?? "",
+    customerEmail: item.contact_email ?? null,
+    totalAmount: Number(item.total_amount ?? 0),
+    paymentMethod: item.payment_method ?? null,
+    paymentProofUrl: item.payment_bill_image ?? undefined,
+    transferContent: item.transfer_content ?? null,
+    flightType: hasReturn || flights.length > 1 ? "round_trip" : "one_way",
+    passengers: passengers.map((passenger: any) => ({
+      name: passenger.full_name ?? passenger.name ?? "",
+      type:
+        passenger.passenger_type === "adult"
+          ? "Người lớn"
+          : passenger.passenger_type === "child"
+            ? "Trẻ em"
+            : passenger.passenger_type === "infant"
+              ? "Em bé"
+              : passenger.type ?? passenger.passenger_type ?? "",
+      passportOrCccd:
+        passenger.document_number ?? passenger.passportOrCccd ?? "Chưa có",
+      dateOfBirth:
+        passenger.date_of_birth ?? passenger.dateOfBirth ?? "Chưa có",
+    })),
+    flights: flights.map((flight: any) => ({
+      logo: flight.airline_code ?? flight.logo ?? "✈️",
+      airline: flight.airline_name ?? flight.airline ?? "",
+      flightNumber: flight.flight_number ?? flight.flightNumber ?? "",
+      departure: flight.departure_airport ?? flight.departure ?? "",
+      arrival: flight.arrival_airport ?? flight.arrival ?? "",
+      departTime: flight.departure_at ?? flight.departTime ?? "",
+      arrivalTime: flight.arrival_at ?? flight.arrivalTime ?? "",
+      seatClass: flight.seatClass ?? "Phổ thông",
+    })),
   };
 }

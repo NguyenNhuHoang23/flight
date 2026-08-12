@@ -304,8 +304,16 @@ export const FlightRow: React.FC<Props> = ({
         {/* TIỆN ÍCH + NÚT CHỌN */}
         <div className="flex items-center gap-1 shrink-0">
           <div className="hidden sm:flex items-center gap-1 text-slate-400">
-            {hasBaggage && <Luggage size={13} title="Có hành lý ký gửi" />}
-            {hasMeal && <Utensils size={13} title="Có suất ăn" />}
+            {hasBaggage && (
+              <span title="Có hành lý ký gửi">
+                <Luggage size={13} />
+              </span>
+            )}
+            {hasMeal && (
+              <span title="Có suất ăn">
+                <Utensils size={13} />
+              </span>
+            )}
           </div>
 
           {/* <button

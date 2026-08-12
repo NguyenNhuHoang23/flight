@@ -128,7 +128,13 @@ export default function AdminSettingsPage() {
         },
         body: JSON.stringify(mapConfigToPayload(config)),
       });
+            if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
 
+        window.location.href = "/admin/login";
+
+        return [];
+      }
       const result = await response.json();
 
       if (!response.ok || !result.success) {

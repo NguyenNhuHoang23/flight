@@ -113,10 +113,10 @@ export default function BankAccountListPage() {
     <div className="space-y-5">
       <BankAccountHeader onAdd={() => setShowAddModal(true)} adding={adding} />
 
-      <ActiveBankAccount account={activeAccount} />
+      <ActiveBankAccount account={activeAccount ?? null} />
 
       <BankAccountTable
-        accounts={accounts}
+        accounts={accounts }
         updating={updating}
         deleting={deleting}
         onSetActive={handleSetActiveAccount}

@@ -5,6 +5,7 @@ export interface OrderPassenger {
   order_id: number;
   full_name: string;
   passenger_type: string;
+  date_of_birth: string | null;
   document_type: string | null;
   document_number: string | null;
   created_at: string;
@@ -68,7 +69,6 @@ const getOrderDetail = async (
   );
 
   const data = await response.json();
-  console.log("🚀 ~ getOrderDetail ~ data:", data);
 
   if (!response.ok || !data.success) {
     throw new Error(data.message || "Không thể lấy chi tiết đơn hàng");

@@ -3,15 +3,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface CustomerUser {
+export interface CustomerUser {
   id: number;
-  name: string;
+  userName?: string;
+  name?: string;
   email: string;
-  email_verified_at: string | null;
+  email_verified_at?: string | null;
   role: string;
   balance: string | number;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CustomerAuthState {

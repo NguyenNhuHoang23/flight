@@ -22,13 +22,8 @@ export interface Refund {
 
   created_at?: string;
   updated_at?: string;
-
-  user?: {
-    id: number;
-    userName: string;
-    email: string;
-  };
 }
+
 export interface RefundPagination {
   current_page: number;
   last_page: number;
@@ -46,7 +41,7 @@ interface RefundResponse {
   pagination: RefundPagination;
 }
 
-const fetchRefunds = async (
+const fetchClientRefunds = async (
   token: string,
   page: number,
   perPage: number
@@ -56,7 +51,7 @@ const fetchRefunds = async (
     per_page: String(perPage),
   });
 
-  const response = await fetch(`/api/refund?${params.toString()}`, {
+  const response = await fetch(`/api/refund/client?${params.toString()}`, {
     method: "GET",
     headers: {
       Accept: "application/json",
@@ -66,8 +61,9 @@ const fetchRefunds = async (
   });
 
   if (response.status === 401) {
-    localStorage.removeItem("admin-auth");
-    window.location.href = "/admin/login";
+    localStorage.removeItem("auth");
+    window.location.href = "/login";
+
     throw new Error("Phiên đăng nhập đã hết hạn");
   }
 
@@ -75,17 +71,25 @@ const fetchRefunds = async (
 
   if (!response.ok || !data.success) {
     throw new Error(
-      data.message || "Không thể lấy danh sách hoàn tiền"
+      data.message || "Không thể lấy lịch sử hoàn tiền"
     );
   }
 
   return data;
 };
 
-export function useRefunds(token: string, page: number, perPage: number) {
+export function useClientRefunds(
+  token: string,
+  page: number = 1,
+  perPage: number = 10
+) {
   return useQuery({
-    queryKey: ["admin-refunds", token, page, perPage],
-    queryFn: () => fetchRefunds(token, page, perPage),
+    queryKey: ["client-refunds", page, perPage],
+
+    queryFn: () => fetchClientRefunds(token, page, perPage),
+
     enabled: Boolean(token),
+
+    placeholderData: (previousData) => previousData,
   });
 }

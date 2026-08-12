@@ -93,8 +93,8 @@ export default function CreateInvoicePage() {
   };
 
   // Format tiền tệ hiển thị (ví dụ: 1000000 -> 1.000.000)
-  const formatAmount = (val: string) => {
-    if (!val) return "0";
+  const formatAmount = (val: string | number) => {
+    if (val === "" || val === null || val === undefined) return "0";
     const num = Number(val);
     return isNaN(num) ? "0" : num.toLocaleString("vi-VN");
   };
@@ -191,60 +191,7 @@ export default function CreateInvoicePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-slate-600 font-medium mb-1">
-              Ngân hàng
-            </label>
-            <input
-              type="text"
-              name="bankName"
-              placeholder="Nhập tên ngân hàng"
-              value={formData.bankName}
-              onChange={handleChange}
-              className="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-600 font-medium mb-1">
-              Tên Tài Khoản
-            </label>
-            <input
-              type="text"
-              name="accountHolder"
-              placeholder="Nhập chủ tài khoản"
-              value={formData.accountHolder}
-              onChange={handleChange}
-              className="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-slate-600 font-medium mb-1">
-                Số tài khoản
-              </label>
-              <input
-                type="text"
-                name="accountNumber"
-                placeholder="Nhập STK"
-                value={formData.accountNumber}
-                onChange={handleChange}
-                className="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            {/* <div>
-              <label className="block text-slate-600 font-medium mb-1">
-                Tải ảnh QR
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="w-full border border-slate-300 rounded px-1.5 py-1 text-[11px] focus:outline-none"
-              />
-            </div> */}
-          </div>
+         
 
           <div>
             <label className="block text-slate-600 font-medium mb-1">

@@ -3,38 +3,36 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface CustomerUser {
+interface ClientUser {
   id: number;
-  name: string;
+  name?: string;
   email: string;
-  email_verified_at: string | null;
-  role: string;
-  balance: string | number;
-  created_at: string;
-  updated_at: string;
+  role?: string;
+  balance?: number;
+  [key: string]: unknown;
 }
 
-interface CustomerAuthState {
-  user: CustomerUser | null;
+interface ClientAuthState {
+  user: ClientUser | null;
   accessToken: string | null;
   hydrated: boolean;
 
-  login: (user: CustomerUser, accessToken: string) => void;
+  setAuth: (accessToken: string, user: ClientUser) => void;
   logout: () => void;
   setHydrated: (value: boolean) => void;
 }
 
-export const useCustomerAuthStore = create<CustomerAuthState>()(
+export const useClientAuthStore = create<ClientAuthState>()(
   persist(
     (set) => ({
       user: null,
       accessToken: null,
       hydrated: false,
 
-      login: (user, accessToken) => {
+      setAuth: (accessToken, user) => {
         set({
-          user,
           accessToken,
+          user,
         });
       },
 
@@ -52,12 +50,12 @@ export const useCustomerAuthStore = create<CustomerAuthState>()(
       },
     }),
     {
-      name: "customer-auth",
+      name: "client-auth",
 
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
-            console.error("❌ Lỗi hydrate customer auth:", error);
+            console.error("❌ Lỗi hydrate client auth:", error);
           }
 
           state?.setHydrated(true);

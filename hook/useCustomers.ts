@@ -1,16 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-
-export interface Customer {
-  id: number;
-  name: string;
-  email: string;
-  balance: string;
-  role: "admin" | "customer";
-  created_at?: string;
-  updated_at?: string;
-}
+import { Customer } from "@/components/admin/customer/customer-types";
 
 interface CustomerResponse {
   success: boolean;
@@ -33,6 +24,24 @@ async function fetchCustomers(token: string): Promise<CustomerResponse> {
     },
     cache: "no-store",
   });
+
+  if (response.status === 401) {
+    localStorage.removeItem("admin-auth");
+
+    window.location.href = "/admin/login";
+
+    return {
+      success: false,
+      message: "Phiên đăng nhập đã hết hạn",
+      data: {
+        data: [],
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0,
+      },
+    };
+  }
 
   const data = await response.json();
 

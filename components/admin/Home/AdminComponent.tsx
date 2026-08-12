@@ -11,8 +11,21 @@ import {
   MoreVertical,
   ChevronRight,
 } from "lucide-react";
+import { useAuthStore } from "@/store/auth-store";
+import { useRefunds } from "@/hook/useRefunds";
 
 export default function AdminDashboard() {
+    const token = useAuthStore((state) => state.accessToken);
+    const { isLoading } = useRefunds(token || "", 1, 10);
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-lg font-semibold text-slate-700">
+                    Đang tải dữ liệu...
+                </div>
+            </div>
+        );
+    }
   const stats = [
     {
       title: "Tổng doanh thu",

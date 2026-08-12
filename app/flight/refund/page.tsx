@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Info, Loader2, Send } from "lucide-react";
 
 import { useCustomerAuthStore } from "@/store/customer-auth-store";
+import { useAuthStoreClient } from "@/store/auth-client-store";
 
 export default function RefundPage() {
   const router = useRouter();
@@ -23,6 +24,47 @@ export default function RefundPage() {
   const accessToken = useCustomerAuthStore((state) => state.accessToken);
 
   const hydrated = useCustomerAuthStore((state) => state.hydrated);
+  const logout = useCustomerAuthStore((state) => state.logout);
+  
+  const [loggingOut, setLoggingOut] = useState(false);
+  const handleLogout = async () => {
+    if (loggingOut) return;
+
+    try {
+      setLoggingOut(true);
+
+      const response = await fetch("/api/admin/logout", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+
+          ...(accessToken
+            ? {
+                Authorization: `Bearer ${accessToken}`,
+              }
+            : {}),
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || "Không thể đăng xuất");
+      }
+
+      // Xóa Zustand + localStorage admin-auth
+      logout();
+
+      // Chuyển về trang login
+      router.replace("/");
+    } catch (error) {
+      console.error("LOGOUT ERROR:", error);
+
+      alert(error instanceof Error ? error.message : "Không thể đăng xuất");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   console.log("hydrated:", hydrated);
   console.log("user:", user);
@@ -122,11 +164,11 @@ export default function RefundPage() {
           <h1 className="text-xl font-bold">Yêu Cầu Hoàn Tiền Vé</h1>
 
           <p className="text-sm text-white/80 mt-1">
-            Tài khoản: <b>{user?.email}</b>
+            Tài khoản: <b>{user?.userName}</b>
           </p>
 
-          <p className="text-sm text-white/80">
-            Số dư: <b>{Number(user?.balance || 0).toLocaleString("vi-VN")} ₫</b>
+          <p className="text-sm text-red-500 cursor-pointer mt-1" onClick={() => {handleLogout()}}>
+            {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
           </p>
         </div>
 
@@ -274,7 +316,7 @@ export default function RefundPage() {
 
                 {amount && (
                   <p className="mt-1 text-xs text-gray-500">
-                    {formatCurrency(amount)} VNĐ
+                    {amount} VNĐ
                   </p>
                 )}
               </div>

@@ -30,6 +30,8 @@ interface RefundCustomerGroupProps {
   onSave: (commandId: string) => void;
 
   onStatusChange: (commandId: string, status: "approved" | "rejected") => void;
+  onDelete: (commandId: string) => void;
+   onCancel: (commandId: string) => void;
 }
 
 export default function RefundCustomerGroup({
@@ -41,6 +43,8 @@ export default function RefundCustomerGroup({
   onAddCommand,
   onSave,
   onStatusChange,
+  onDelete,
+  onCancel
 }: RefundCustomerGroupProps) {
   return (
     <div
@@ -118,6 +122,8 @@ export default function RefundCustomerGroup({
                 uppercase
               "
             >
+              <th className="py-2.5 px-3 text-center w-12">STT</th>
+
               <th className="py-2.5 px-4 w-72">THÔNG TIN RÚT</th>
 
               <th className="py-2.5 px-4 w-48">SỐ TIỀN RÚT</th>
@@ -137,9 +143,10 @@ export default function RefundCustomerGroup({
               text-xs
             "
           >
-            {group.commands.map((command) => (
+            {group.commands.map((command, index) => (
               <RefundCommandRow
                 key={command.id}
+                index={index + 1}
                 command={command}
                 saved={savedCommandId === command.id}
                 isCreating={isCreating}
@@ -150,6 +157,8 @@ export default function RefundCustomerGroup({
                 onAdd={() => onAddCommand(command.id)}
                 onSave={() => onSave(command.id)}
                 onStatusChange={(status) => onStatusChange(command.id, status)}
+                onDelete={() => onDelete(command.id)}
+                onCancel={() => onCancel(command.id)}
               />
             ))}
           </tbody>

@@ -1,10 +1,10 @@
 export interface Customer {
   id: number;
   username: string;
-  role: "admin" | "customer";
   balance: number | string | null;
+  role: "admin" | "customer";
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface CustomerFormData {

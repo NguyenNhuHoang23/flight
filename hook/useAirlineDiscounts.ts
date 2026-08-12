@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 
-// Khai báo kiểu dữ liệu trả về từ API
 interface AirlineDiscountResponse {
   success: boolean;
   message?: string;
@@ -24,8 +23,17 @@ export interface AirlineSaleConfig {
   isCustom: boolean;
 }
 
-// Hàm fetch API độc lập
-const fetchAirlineDiscounts = async () => {
+export interface AirlineDiscountResult {
+  defaultDiscount: number;
+  airlines: AirlineSaleConfig[];
+}
+
+const emptyDiscountResult = (): AirlineDiscountResult => ({
+  defaultDiscount: 0,
+  airlines: [],
+});
+
+const fetchAirlineDiscounts = async (): Promise<AirlineDiscountResult> => {
   const response = await fetch("/api/admin/sale", {
     method: "GET",
     headers: {
@@ -33,6 +41,12 @@ const fetchAirlineDiscounts = async () => {
     },
     cache: "no-store",
   });
+
+  if (response.status === 401) {
+    localStorage.removeItem("admin-auth");
+    window.location.href = "/admin/login";
+    return emptyDiscountResult();
+  }
 
   const result: AirlineDiscountResponse = await response.json();
 
@@ -42,7 +56,6 @@ const fetchAirlineDiscounts = async () => {
     throw new Error(result?.message || "Không thể lấy cấu hình giảm giá");
   }
 
-  // Map dữ liệu ngay tại hàm fetch
   const defaultDiscount = Number(result.data?.default_discount_rate ?? 0);
   const mappedAirlines: AirlineSaleConfig[] = (result.data?.airlines ?? []).map(
     (airline) => ({
@@ -60,7 +73,6 @@ const fetchAirlineDiscounts = async () => {
   };
 };
 
-// Custom Hook chính
 export const useAirlineDiscounts = () => {
   return useQuery({
     queryKey: ["airlineDiscounts"],

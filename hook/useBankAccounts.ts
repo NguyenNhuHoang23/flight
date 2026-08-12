@@ -76,7 +76,13 @@ export function useBankAccounts(token?: string) {
         },
         cache: "no-store",
       });
+            if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
 
+        window.location.href = "/admin/login";
+
+        return [];
+      }
       const result: BankApiResponse = await response.json();
 
       if (!response.ok || !result.success) {
@@ -119,7 +125,13 @@ export function useBankAccounts(token?: string) {
         },
         cache: "no-store",
       });
+            if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
 
+        window.location.href = "/admin/login";
+
+        return [];
+      }
       const result: BankApiResponse = await response.json();
 
       if (!response.ok || !result.success) {
@@ -154,7 +166,7 @@ export function useBankAccounts(token?: string) {
       bankName: string;
       accountHolder: string;
       accountNumber: string;
-      transferContent?: string;
+      transferContent: string | null;
       isActive?: boolean;
     }) => {
       try {
@@ -176,7 +188,13 @@ export function useBankAccounts(token?: string) {
             status: data.isActive ?? false,
           }),
         });
+            if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
 
+        window.location.href = "/admin/login";
+
+        return [];
+      }
         const result: BankApiResponse = await response.json();
 
         if (!response.ok || !result.success) {
@@ -262,7 +280,13 @@ export function useBankAccounts(token?: string) {
           },
           body: JSON.stringify(body),
         });
+            if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
 
+        window.location.href = "/admin/login";
+
+        return [];
+      }
         const result: BankApiResponse = await response.json();
 
         if (!response.ok || !result.success) {
@@ -342,7 +366,13 @@ export function useBankAccounts(token?: string) {
             Authorization: `Bearer ${token}`,
           },
         });
+            if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
 
+        window.location.href = "/admin/login";
+
+        return [];
+      }
         const result: BankApiResponse = await response.json();
 
         if (!response.ok || !result.success) {

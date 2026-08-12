@@ -3,25 +3,7 @@ import { CalendarX } from "lucide-react";
 
 import { AirOptionAPI, ApiRootResponse } from "./flight-types";
 import { FlightRow } from "./FlightRow";
-
-interface AirlineDiscount {
-  id: number;
-  airline_code: string;
-  airline_name: string;
-  discount_rate: number;
-  is_custom_enabled: boolean;
-}
-interface AirlineDiscount {
-  name: string;
-  code: string;
-  discountPercent: number;
-  isCustom: boolean;
-}
-
-interface AirlineDiscountResult {
-  defaultDiscount: number;
-  airlines: AirlineDiscount[];
-}
+import type { AirlineDiscountResult } from "@/hook/useAirlineDiscounts";
 
 interface Props {
   group?: ApiRootResponse["ListGroup"][number];

@@ -36,12 +36,15 @@ export const FlightPriceTable: React.FC<Props> = ({
 
         <tbody className="divide-y divide-gray-100 font-medium">
           {listFarePax.map((pax, index) => {
-            const taxAndFee = Math.max(0, pax.TotalFare - pax.BaseFare);
+            const taxAndFee = Math.max(
+              0,
+              pax.TotalFare - (pax.BaseFare ?? 0),
+            );
 
             return (
               <tr key={index}>
                 <td className="py-1.5 text-gray-800">
-                  {getPaxName(pax.PaxType)}
+                  {getPaxName(pax.PaxType ?? "")}
                 </td>
 
                 <td className="py-1.5 text-center">{pax.PaxNumb}</td>

@@ -1,14 +1,20 @@
 export interface FarePax {
-  PaxType: string;
+  PaxType?: string;
+  PassengerType?: string;
+  PaxCode?: string;
   PaxNumb: number;
-  BaseFare: number;
+  BaseFare?: number;
+  Fare?: number;
+  VAT?: number;
+  Fee?: number;
   TotalFare: number;
-  Currency: string;
+  Currency?: string;
   ListFareInfo?: Array<{
     FreeBaggage?: string;
     HandBaggage?: string;
     [key: string]: any;
   }>;
+  [key: string]: any;
 }
 
 export interface FareOptionAPI {
@@ -20,11 +26,13 @@ export interface FareOptionAPI {
   CabinName: string;
   BaseFare: number;
   TotalFare: number;
+  PricePerPax?: number;
   Currency: string;
   Exchangeable: boolean;
   Refundable: boolean;
   Availability: number;
   ListFarePax: FarePax[];
+  [key: string]: any;
 }
 
 export interface FlightSegment {
@@ -42,6 +50,8 @@ export interface FlightOption {
     FlightNumber: string;
     DepartDate: string;
     ArriveDate: string;
+    AirlineCode?: string;
+    Airline?: string;
     ListSegment?: FlightSegment[];
   }>;
 }
@@ -59,6 +69,11 @@ export interface ApiRootResponse {
     EndPoint: string;
     StartPoint: string;
     ListAirOption: AirOptionAPI[];
+    DepartDate?: string;
+    Adt?: number;
+    Chd?: number;
+    Inf?: number;
+    [key: string]: any;
   }>;
 }
 

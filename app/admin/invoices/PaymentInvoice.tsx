@@ -2,8 +2,37 @@ import React from "react";
 import { Logo } from "./Logo";
 import Image from "next/image";
 import { useBankAccounts } from "@/hook/useBankAccounts";
+interface PaymentFormData {
+  customerName?: string;
+  customerPhone?: string;
+  flightRoute?: string;
+  bankName?: string;
+  accountHolder?: string;
+  accountNumber?: string;
+  hotline?: string;
+  transferContent?: string;
+  invoiceNo?: string;
+  bookingDate?: string;
+  status?: string;
+  amount?: number | string;
+}
 
-export default function PaymentInvoice({ formData, formatAmount, getQrUrl }) {
+interface PaymentInvoiceProps {
+  formData?: PaymentFormData;
+  formatAmount?: (value: number | string) => string;
+  getQrUrl?: (params: {
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+    amount?: number | string;
+    transferContent?: string;
+  }) => string;
+}
+export default function PaymentInvoice({
+  formData,
+  formatAmount,
+  getQrUrl,
+}: PaymentInvoiceProps) {
   // Dữ liệu mẫu khớp hoàn toàn với mẫu ảnh
   const data = {
     customerName: formData?.customerName || "ĐỖ ĐÌNH NĂNG",
@@ -130,7 +159,7 @@ export default function PaymentInvoice({ formData, formatAmount, getQrUrl }) {
                   Ngân Hàng :
                 </div>
                 <div className="text-[13.5px] font-normal text-slate-800 leading-tight mt-0.5">
-                  {data.bankName}
+                  {activeBank?.bankName}
                 </div>
               </div>
 
@@ -140,7 +169,7 @@ export default function PaymentInvoice({ formData, formatAmount, getQrUrl }) {
                   Chủ Tài Khoản:
                 </div>
                 <div className="text-[13.5px] font-semibold text-slate-900 uppercase mt-0.5">
-                  {data.accountHolder}
+                  {activeBank?.accountHolder}
                 </div>
               </div>
 
@@ -150,7 +179,7 @@ export default function PaymentInvoice({ formData, formatAmount, getQrUrl }) {
                   Số Tài Khoản:
                 </div>
                 <div className="text-[14px] font-medium text-slate-900 mt-0.5">
-                  {data.accountNumber}
+                  {activeBank?.accountNumber}
                 </div>
               </div>
 

@@ -7,7 +7,7 @@ export interface BankAccount {
   bankName: string;
   accountNumber: string;
   accountHolder: string;
-  transferContent?: string;
+  transferContent: string | null;
   isActive: boolean;
 }
 
