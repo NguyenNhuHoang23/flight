@@ -24,3 +24,22 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes booking-scroll {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-booking-scroll {
+  animation: booking-scroll 28s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-booking-scroll {
+    animation: none;
+  }
+}

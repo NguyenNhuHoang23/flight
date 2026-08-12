@@ -223,7 +223,7 @@ const formatMoney = (value: string | number) => {
   <option value="all">Tất cả</option>
   <option value="pending">Đang xử lý</option>
   <option value="approved">Thành công</option>
-  <option value="rejected">Từ chối</option>
+  <option value="rejected">Đã hủy</option>
 </select>
           </div>
         </div>
@@ -252,6 +252,14 @@ const formatMoney = (value: string | number) => {
                     <div className="text-gray-500 uppercase">
                       {item.account_holder}
                     </div>
+                    {item.note?.trim() ? (
+                      <div className="pt-1 text-gray-600">
+                        <span className="font-semibold text-gray-700">
+                          Ghi chú:{" "}
+                        </span>
+                        {item.note}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex justify-between items-end pt-1">
@@ -278,6 +286,7 @@ const formatMoney = (value: string | number) => {
                 <tr className="bg-gray-100/80 border-b border-gray-200 text-gray-700 font-bold uppercase">
                   <th className="py-3 px-4">Mã Yêu Cầu</th>
                   <th className="py-3 px-4">Thông Tin Nhận Tiền</th>
+                  <th className="py-3 px-4">Ghi Chú</th>
                   <th className="py-3 px-4 text-right">Số Tiền</th>
                   <th className="py-3 px-4 text-center">Trạng Thái</th>
                   <th className="py-3 px-4 text-center">Thời Gian</th>
@@ -306,6 +315,17 @@ const formatMoney = (value: string | number) => {
                         <div className="text-[11px] text-gray-500 uppercase">
                           {item.account_holder}
                         </div>
+                      </td>
+
+                      {/* Ghi chú */}
+                      <td className="py-3.5 px-4 text-xs text-gray-600 max-w-xs">
+                        {item.note?.trim() ? (
+                          <span className="whitespace-pre-wrap break-words">
+                            {item.note}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
                       </td>
 
                       {/* Số tiền */}
@@ -432,7 +452,7 @@ function StatusBadge({
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-700">
           <CheckCircle2 size={13} />
-          Thành công
+          Đã duyệt
         </span>
       );
 
@@ -448,7 +468,7 @@ function StatusBadge({
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
           <XCircle size={13} />
-          Từ chối
+          Đã hủy
         </span>
       );
 

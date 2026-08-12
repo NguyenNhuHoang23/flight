@@ -41,6 +41,8 @@ export default function OrderCard({
   onViewBill,
   onPrintTicket,
 }: OrderCardProps) {
+  console.log(order);
+  
   const getBillUrl = () => {
     if (!order.paymentProofUrl) return "";
 

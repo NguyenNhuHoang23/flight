@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
+import React, { useMemo } from "react";
 import {
   Phone,
   List,
@@ -20,32 +19,145 @@ interface FlightBookingUIProps {
   bannerSrc?: string;
 }
 
+type AirlineTone = "blue" | "red" | "green";
+
+interface RecentBooking {
+  airline: string;
+  tone: AirlineTone;
+  route: string;
+  price: string;
+  dateOffset: number;
+}
+
+const RECENT_BOOKINGS: RecentBooking[] = [
+  {
+    airline: "Vietravel Airlines",
+    tone: "blue",
+    route: "từ TP Hồ Chí Minh ➔ Hà Nội",
+    price: "748,000",
+    dateOffset: 0,
+  },
+  {
+    airline: "VietJet.air",
+    tone: "red",
+    route: "từ TP Hồ Chí Minh ➔ Hà Nội",
+    price: "1,790,000",
+    dateOffset: 1,
+  },
+  {
+    airline: "VietJet.air",
+    tone: "red",
+    route: "từ Hải Phòng ➔ Đà Lạt",
+    price: "1,010,000",
+    dateOffset: 1,
+  },
+  {
+    airline: "Vietravel Airlines",
+    tone: "blue",
+    route: "từ Phú Quốc ➔ TP Hồ Chí Minh",
+    price: "178,000",
+    dateOffset: 2,
+  },
+  {
+    airline: "Vietnam Airlines",
+    tone: "green",
+    route: "từ Đà Nẵng ➔ Hà Nội",
+    price: "1,250,000",
+    dateOffset: 0,
+  },
+  {
+    airline: "Bamboo Airways",
+    tone: "green",
+    route: "từ Hà Nội ➔ Nha Trang",
+    price: "980,000",
+    dateOffset: 2,
+  },
+  {
+    airline: "VietJet.air",
+    tone: "red",
+    route: "từ Cần Thơ ➔ Đà Nẵng",
+    price: "890,000",
+    dateOffset: 3,
+  },
+  {
+    airline: "Vietnam Airlines",
+    tone: "green",
+    route: "từ TP Hồ Chí Minh ➔ Phú Quốc",
+    price: "560,000",
+    dateOffset: 1,
+  },
+  {
+    airline: "Vietravel Airlines",
+    tone: "blue",
+    route: "từ Vinh ➔ TP Hồ Chí Minh",
+    price: "1,120,000",
+    dateOffset: 3,
+  },
+  {
+    airline: "Bamboo Airways",
+    tone: "green",
+    route: "từ Huế ➔ Hà Nội",
+    price: "720,000",
+    dateOffset: 0,
+  },
+];
+
+const airlineToneClass: Record<AirlineTone, string> = {
+  blue: "italic font-semibold text-blue-800",
+  red: "italic font-bold text-red-600",
+  green: "italic font-semibold text-emerald-700",
+};
+
+function formatBookingDate(offset: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${day}/${month}`;
+}
+
+function BookingRow({ booking }: { booking: RecentBooking }) {
+  return (
+    <div className="flex items-center justify-between border-b border-gray-100 pb-2.5 pt-0.5">
+      <div className="flex items-center space-x-2 min-w-0">
+        <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin shrink-0" />
+        <div className="min-w-0">
+          <span className="text-gray-600 block">Khách mới đặt 1 vé</span>
+          <div className="flex items-center space-x-1 text-gray-500 flex-wrap">
+            <span>Đi</span>
+            <span className={airlineToneClass[booking.tone]}>
+              {booking.airline}
+            </span>
+            <span>{formatBookingDate(booking.dateOffset)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="text-right shrink-0 pl-3">
+        <div className="font-medium text-gray-700">{booking.route}</div>
+        <div className="text-red-600 font-bold text-xs">
+          Giá vé: {booking.price}
+          <sup>đ</sup>
+          <a href="#" className="text-blue-500 font-normal ml-1 underline">
+            chi tiết
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FlightBookingUI({
   bannerSrc = "/images/banner.jpg", // Thay đường dẫn ảnh của bạn ở đây
 }: FlightBookingUIProps) {
-    const { info, isLoading, error: loadError, refetchInfo } = useGetData();
+  const { info } = useGetData();
 
-  const getRecentBookingDates = () => {
-    const now = new Date();
+  const scrollingBookings = useMemo(
+    () => [...RECENT_BOOKINGS, ...RECENT_BOOKINGS],
+    [],
+  );
 
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    const dates = [];
-
-    for (let i = 0; i < 4; i++) {
-      const date = new Date(currentYear, currentMonth, now.getDate() + i);
-
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-
-      dates.push(`${day}/${month}`);
-    }
-
-    return dates;
-  };
-
-  const bookingDates = getRecentBookingDates();
   return (
     <>
       {/* 1. Main Search Form Area */}
@@ -101,133 +213,14 @@ export default function FlightBookingUI({
             VÉ MÁY BAY GIÁ RẺ KHÁCH MỚI ĐẶT
           </h3>
 
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between border-b pb-2">
-              <div className="flex items-center space-x-2">
-                <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin" />
-                <div>
-                  <span className="text-gray-600 block">
-                    Khách mới đặt 1 vé
-                  </span>
-                  <div className="flex items-center space-x-1 text-gray-500">
-                    <span>Đi</span>
-                    <span className="italic font-semibold text-blue-800">
-                      Vietravel Airlines
-                    </span>
-                    <span>{bookingDates[0]}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-gray-700">
-                  từ TP Hồ Chí Minh ➔ Hà Nội
-                </div>
-                <div className="text-red-600 font-bold text-xs">
-                  Giá vé: 748,000<sup>đ</sup>
-                  <a
-                    href="#"
-                    className="text-blue-500 font-normal ml-1 underline"
-                  >
-                    chi tiết
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-b pb-2">
-              <div className="flex items-center space-x-2">
-                <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin" />
-                <div>
-                  <span className="text-gray-600 block">
-                    Khách mới đặt 1 vé
-                  </span>
-                  <div className="flex items-center space-x-1 text-gray-500">
-                    <span>Đi</span>
-                    <span className="italic font-bold text-red-600">
-                      VietJet.air
-                    </span>
-                    <span>{bookingDates[1]}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-gray-700">
-                  từ TP Hồ Chí Minh ➔ Hà Nội
-                </div>
-                <div className="text-red-600 font-bold text-xs">
-                  Giá vé: 1,790,000<sup>đ</sup>
-                  <a
-                    href="#"
-                    className="text-blue-500 font-normal ml-1 underline"
-                  >
-                    chi tiết
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-b pb-2">
-              <div className="flex items-center space-x-2">
-                <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin" />
-                <div>
-                  <span className="text-gray-600 block">
-                    Khách mới đặt 1 vé
-                  </span>
-                  <div className="flex items-center space-x-1 text-gray-500">
-                    <span>Đi</span>
-                    <span className="italic font-bold text-red-600">
-                      VietJet.air
-                    </span>
-                    <span>{bookingDates[1]}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-gray-700">
-                  từ Hải Phòng ➔ Đà Lạt
-                </div>
-                <div className="text-red-600 font-bold text-xs">
-                  Giá vé: 1,010,000<sup>đ</sup>
-                  <a
-                    href="#"
-                    className="text-blue-500 font-normal ml-1 underline"
-                  >
-                    chi tiết
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <RefreshCw className="w-3.5 h-3.5 text-gray-400 animate-spin" />
-                <div>
-                  <span className="text-gray-600 block">
-                    Khách mới đặt 1 vé
-                  </span>
-                  <div className="flex items-center space-x-1 text-gray-500">
-                    <span>Đi</span>
-                    <span className="italic font-semibold text-blue-800">
-                      Vietravel Airlines
-                    </span>
-                    <span>{bookingDates[2]}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-gray-700">
-                  từ Phú Quốc ➔ TP Hồ Chí Minh
-                </div>
-                <div className="text-red-600 font-bold text-xs">
-                  Giá vé: 178,000<sup>đ</sup>
-                  <a
-                    href="#"
-                    className="text-blue-500 font-normal ml-1 underline"
-                  >
-                    chi tiết
-                  </a>
-                </div>
-              </div>
+          <div className="relative h-[220px] overflow-hidden text-xs group">
+            <div className="flex flex-col gap-3 animate-booking-scroll group-hover:[animation-play-state:paused]">
+              {scrollingBookings.map((booking, index) => (
+                <BookingRow
+                  key={`${booking.airline}-${booking.route}-${index}`}
+                  booking={booking}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -295,9 +288,7 @@ export default function FlightBookingUI({
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-gray-700">
-                    {info?.address}
-                  </div>
+                  <div className="text-gray-700">{info?.address}</div>
                 </div>
               </div>
             </div>

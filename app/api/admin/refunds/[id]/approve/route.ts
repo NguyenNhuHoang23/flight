@@ -23,6 +23,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
 
     const token = request.headers.get("authorization");
+    let body: unknown = {};
+
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
 
     const response = await fetch(`${API_URL}/api/admin/refunds/${id}/approve`, {
       method: "POST",
@@ -31,6 +38,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         "Content-Type": "application/json",
         ...(token ? { Authorization: token } : {}),
       },
+      body: JSON.stringify(body ?? {}),
     });
 
     const data = await response.json();

@@ -119,7 +119,7 @@ export default function VietnamAirlinesTicket({
               </div>
 
               <div className="col-span-2 rounded-sm text-xs relative">
-                <div className="absolute left-44 top-16 -translate-x-1/2 text-black text-xs font-bold pointer-events-none">
+                <div className="absolute left-40 top-16 -translate-x-1/2 text-black text-xs font-bold pointer-events-none">
                   ►
                 </div>
 

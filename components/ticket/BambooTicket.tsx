@@ -64,20 +64,6 @@ export default function BambooTicket({
               height={50}
             />
           </div>
-
-          <div className="text-[9px] text-slate-500 leading-tight pt-1">
-            Bamboo Airways JSC
-          </div>
-
-          <div className="text-[9px] text-slate-500 leading-tight">
-            Khu số 4, khu du lịch biển Nhơn Lý -
-            Cát Tiến, xã Nhơn Lý, Thành phố Quy
-            Nhơn, tỉnh Bình Định, Việt Nam
-          </div>
-
-          <div className="text-[9px] text-slate-500 leading-tight pt-0.5">
-            Mã số thuế: 0107867370
-          </div>
         </div>
       </div>
 

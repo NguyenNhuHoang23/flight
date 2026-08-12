@@ -24,6 +24,19 @@ export interface SystemConfig {
   bankInfo?: string;
 }
 
+type AdminInfoApiData = {
+  hotline?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  website?: string | null;
+  facebook?: string | null;
+  zalo?: string | null;
+  messenger?: string | null;
+  email?: string | null;
+  email_contact?: string | null;
+  bank_info?: string | null;
+};
+
 type GetClientContextType = {
   info?: SystemConfig;
   isLoading: boolean;
@@ -39,6 +52,20 @@ interface GetClientProviderProps {
   children: ReactNode;
 }
 
+function mapApiDataToConfig(data: AdminInfoApiData | null | undefined): SystemConfig {
+  return {
+    fanpage: data?.facebook || "",
+    hotline: data?.hotline || "",
+    address: data?.address || "",
+    website: data?.website || "",
+    zalo: data?.zalo || "",
+    messenger: data?.messenger || "",
+    phone: data?.phone || "",
+    emailContact: data?.email || data?.email_contact || "",
+    bankInfo: data?.bank_info || "",
+  };
+}
+
 async function fetchAdminInfo(): Promise<SystemConfig> {
   const response = await fetch("/api/admin/info", {
     method: "GET",
@@ -49,13 +76,12 @@ async function fetchAdminInfo(): Promise<SystemConfig> {
   });
 
   const data = await response.json();
-  console.log("🚀 ~ fetchAdminInfo ~ data:", data)
 
   if (!response.ok || !data.success) {
     throw new Error(data.message || "Không thể lấy thông tin website");
   }
 
-  return data.data as SystemConfig;
+  return mapApiDataToConfig(data.data);
 }
 
 function ClientDataProvider({ children }: GetClientProviderProps) {

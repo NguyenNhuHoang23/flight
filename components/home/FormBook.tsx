@@ -11,9 +11,12 @@ import {
   Loader2,
   Plane,
 } from "lucide-react";
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { vi } from "date-fns/locale/vi";
 import "react-datepicker/dist/react-datepicker.css";
 import { useFlightSearch } from "@/hook/useFlightSearch";
+
+registerLocale("vi", vi);
 
 // Helper bỏ dấu tiếng Việt để tìm kiếm không dấu chuẩn xác
 const removeVietnameseTones = (str: string) => {
@@ -642,6 +645,7 @@ export default function FormBook() {
                   }
                 }}
                 minDate={new Date()}
+                locale="vi"
                 dateFormat="dd/MM/yyyy"
                 className="w-full pl-8 pr-24 py-2 bg-white border border-slate-300 rounded-lg text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 wrapperClassName="w-full"
@@ -683,6 +687,7 @@ export default function FormBook() {
                 onChange={(date: Date | null) => setReturnDate(date)}
                 minDate={departureDate || new Date()}
                 placeholderText="Chọn ngày"
+                locale="vi"
                 dateFormat="dd/MM/yyyy"
                 className="w-full pl-8 pr-20 py-2 bg-white border border-slate-300 rounded-lg text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-600"
                 wrapperClassName="w-full"

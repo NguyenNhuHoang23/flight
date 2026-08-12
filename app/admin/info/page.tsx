@@ -25,6 +25,7 @@ type AdminInfoApiData = {
   facebook: string;
   zalo: string;
   messenger: string;
+  email?: string | null;
   email_contact?: string | null;
   bank_info?: string | null;
 };
@@ -56,7 +57,7 @@ function mapApiDataToConfig(data: AdminInfoApiData): SystemConfig {
     zalo: data.zalo || "",
     messenger: data.messenger || "",
     phone: data.phone || "",
-    emailContact: data.email_contact || "",
+    emailContact: data.email || data.email_contact || "",
     bankInfo: data.bank_info || "",
   };
 }
@@ -70,8 +71,7 @@ function mapConfigToPayload(config: SystemConfig) {
     facebook: config.fanpage,
     zalo: config.zalo,
     messenger: config.messenger,
-    email_contact: config.emailContact || null,
-    bank_info: config.bankInfo || null,
+    email: config.emailContact?.trim() || null,
   };
 }
 
@@ -243,6 +243,32 @@ export default function AdminSettingsPage() {
                     className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
                   >
                     {copiedField === "phone" ? "✓ Đã chép" : "Copy"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Email liên hệ
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    name="emailContact"
+                    value={config.emailContact || ""}
+                    onChange={handleChange}
+                    placeholder="vd: hotro@example.com"
+                    className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(config.emailContact || "", "emailContact")
+                    }
+                    className="absolute right-2 top-2.5 px-2 py-1 text-[11px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition"
+                  >
+                    {copiedField === "emailContact" ? "✓ Đã chép" : "Copy"}
                   </button>
                 </div>
               </div>

@@ -27,7 +27,7 @@ export default function Fooder() {
               </div>
               <div className="flex items-center gap-2 text-slate-300">
                 <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{info?.fanpage}</span>
+                <span>{info?.emailContact}</span>
               </div>
             </div>
           </div>
