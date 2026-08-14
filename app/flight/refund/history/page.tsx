@@ -264,7 +264,7 @@ const formatMoney = (value: string | number) => {
 
                   <div className="flex justify-between items-end pt-1">
                     <span className="text-[11px] text-gray-400">
-                      {item.created_at}
+                      {item.time} {item.ampm}
                     </span>
                     <span className="font-bold text-red-600 text-sm">
                       {formatMoney(item.amount)}
@@ -340,7 +340,7 @@ const formatMoney = (value: string | number) => {
 
                       {/* Thời gian */}
                       <td className="py-3.5 px-4 text-center text-xs text-gray-500 whitespace-nowrap">
-                        {item.time}/{item.date}
+                        {item.time} {item.ampm}
                       </td>
                     </tr>
                   ))
