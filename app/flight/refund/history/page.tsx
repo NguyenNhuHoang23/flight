@@ -13,10 +13,9 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { useRefundHistory } from "@/hook/useRefundHistory";
-import { useCustomerAuthStore } from "@/store/customer-auth-store";
 import { useClientRefunds } from "@/hook/useRefundClient";
-import page from "../page";
+import { convertRefundDateTimeToVietnam } from "@/components/refund/refund-datetime";
+import { useCustomerAuthStore } from "@/store/customer-auth-store";
 
 // Kiểu dữ liệu lịch sử hoàn tiền (Cập nhật field note)
 interface RefundRecord {
@@ -75,6 +74,16 @@ const formatMoney = (value: string | number) => {
   }
 
   return new Intl.NumberFormat("vi-VN").format(amount) + " đ";
+};
+
+const formatRefundVietnamTime = (
+  date?: string | null,
+  time?: string | null,
+  ampm?: "AM" | "PM" | null,
+) => {
+  const vietnamDateTime = convertRefundDateTimeToVietnam(date, time, ampm);
+
+  return `${vietnamDateTime.time} ${vietnamDateTime.ampm}`;
 };
 
   useEffect(() => {
@@ -264,7 +273,7 @@ const formatMoney = (value: string | number) => {
 
                   <div className="flex justify-between items-end pt-1">
                     <span className="text-[11px] text-gray-400">
-                      {item.time} {item.ampm}
+                      {formatRefundVietnamTime(item.date, item.time, item.ampm)}
                     </span>
                     <span className="font-bold text-red-600 text-sm">
                       {formatMoney(item.amount)}
@@ -340,7 +349,7 @@ const formatMoney = (value: string | number) => {
 
                       {/* Thời gian */}
                       <td className="py-3.5 px-4 text-center text-xs text-gray-500 whitespace-nowrap">
-                        {item.time} {item.ampm}
+                        {formatRefundVietnamTime(item.date, item.time, item.ampm)}
                       </td>
                     </tr>
                   ))
