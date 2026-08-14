@@ -8,6 +8,7 @@ interface BankAccountTableProps {
   updating: boolean;
   deleting: boolean;
   onSetActive: (id: number) => void;
+  onEdit: (account: BankAccount) => void;
   onDelete: (id: number) => void;
 }
 
@@ -16,6 +17,7 @@ export default function BankAccountTable({
   updating,
   deleting,
   onSetActive,
+  onEdit,
   onDelete,
 }: BankAccountTableProps) {
   return (
@@ -34,7 +36,7 @@ export default function BankAccountTable({
 
               <th className="py-3.5 px-4 text-center w-32">TRẠNG THÁI</th>
 
-              <th className="py-3.5 px-4 text-center w-24">THAO TÁC</th>
+              <th className="py-3.5 px-4 text-center w-36">THAO TÁC</th>
             </tr>
           </thead>
 
@@ -46,6 +48,7 @@ export default function BankAccountTable({
                 updating={updating}
                 deleting={deleting}
                 onSetActive={onSetActive}
+                onEdit={onEdit}
                 onDelete={onDelete}
               />
             ))}

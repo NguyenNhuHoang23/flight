@@ -6,9 +6,11 @@ import { useAuthStore } from "@/store/auth-store";
 import AddBankAccountModal, {
   NewBankAccount,
 } from "@/components/admin/bank/AddBankAccountModal";
+import EditBankAccountModal from "@/components/admin/bank/EditBankAccountModal";
 import BankAccountHeader from "@/components/admin/bank/BankAccountHeader";
 import ActiveBankAccount from "@/components/admin/bank/ActiveBankAccount";
 import BankAccountTable from "@/components/admin/bank/BankAccountTable";
+import type { BankAccount } from "@/components/admin/bank/types";
 
 export default function BankAccountListPage() {
   const token = useAuthStore.getState().accessToken;
@@ -21,11 +23,15 @@ export default function BankAccountListPage() {
     updating,
     deleting,
     createBank,
+    updateBank,
     setActiveBank,
     deleteBank,
   } = useBankAccounts(token || "");
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<BankAccount | null>(
+    null,
+  );
 
   // ====================================================
   // ADD
@@ -43,6 +49,23 @@ export default function BankAccountListPage() {
     });
 
     alert("Thêm tài khoản thành công!");
+  };
+
+  // ====================================================
+  // UPDATE
+  // ====================================================
+
+  const handleUpdateAccount = async (data: NewBankAccount) => {
+    if (!editingAccount) return;
+
+    await updateBank(editingAccount.id, {
+      bankName: data.bankName,
+      accountHolder: data.accountHolder,
+      accountNumber: data.accountNumber,
+      transferContent: data.transferContent,
+    });
+
+    alert("Cập nhật tài khoản thành công!");
   };
 
   // ====================================================
@@ -120,6 +143,7 @@ export default function BankAccountListPage() {
         updating={updating}
         deleting={deleting}
         onSetActive={handleSetActiveAccount}
+        onEdit={setEditingAccount}
         onDelete={handleDeleteAccount}
       />
 
@@ -128,6 +152,13 @@ export default function BankAccountListPage() {
         adding={adding}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddAccount}
+      />
+
+      <EditBankAccountModal
+        account={editingAccount}
+        updating={updating}
+        onClose={() => setEditingAccount(null)}
+        onSubmit={handleUpdateAccount}
       />
     </div>
   );

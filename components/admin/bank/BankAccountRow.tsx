@@ -16,6 +16,7 @@ interface BankAccountRowProps {
   updating: boolean;
   deleting: boolean;
   onSetActive: (id: number) => void;
+  onEdit: (account: BankAccount) => void;
   onDelete: (id: number) => void;
 }
 
@@ -24,6 +25,7 @@ export default function BankAccountRow({
   updating,
   deleting,
   onSetActive,
+  onEdit,
   onDelete,
 }: BankAccountRowProps) {
   return (
@@ -76,24 +78,37 @@ export default function BankAccountRow({
         )}
       </td>
 
-      {/* DELETE */}
+      {/* ACTIONS */}
       <td className="py-4 px-4 text-center">
-        <button
-          onClick={() => onDelete(account.id)}
-          disabled={account.isActive || deleting}
-          className={`text-xs font-semibold py-1 px-2.5 rounded transition ${
-            account.isActive || deleting
-              ? "text-slate-300 cursor-not-allowed"
-              : "text-rose-600 hover:bg-rose-50"
-          }`}
-          title={
-            account.isActive
-              ? "Không thể xóa TK đang hoạt động"
-              : "Xóa tài khoản"
-          }
-        >
-          {deleting ? "Đang xóa..." : "Xóa"}
-        </button>
+        <div className="flex items-center justify-center gap-1">
+          <button
+            type="button"
+            onClick={() => onEdit(account)}
+            disabled={updating}
+            className="text-xs font-semibold py-1 px-2.5 rounded transition text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+            title="Cập nhật tài khoản"
+          >
+            Sửa
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onDelete(account.id)}
+            disabled={account.isActive || deleting}
+            className={`text-xs font-semibold py-1 px-2.5 rounded transition ${
+              account.isActive || deleting
+                ? "text-slate-300 cursor-not-allowed"
+                : "text-rose-600 hover:bg-rose-50"
+            }`}
+            title={
+              account.isActive
+                ? "Không thể xóa TK đang hoạt động"
+                : "Xóa tài khoản"
+            }
+          >
+            {deleting ? "Đang xóa..." : "Xóa"}
+          </button>
+        </div>
       </td>
     </tr>
   );
