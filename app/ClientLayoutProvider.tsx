@@ -2,18 +2,12 @@
 
 import Header from "@/components/layout/Header";
 import { usePathname } from "next/navigation";
-import React from "react";
-import {
-  PhoneCall,
-  Mail,
-  MapPin,
-  ShieldCheck,
-  CreditCard,
-  Clock,
-} from "lucide-react";
+import React, { useState } from "react";
+import { PhoneCall, Copy, Check, X } from "lucide-react";
 import Fooder from "@/components/layout/Fooder";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 import ReactQueryProvider from "./ReactQueryProvider";
+import { useGetData } from "@/context/GetContext";
 
 interface ClientLayoutProviderProps {
   children: React.ReactNode;
@@ -25,6 +19,21 @@ export default function ClientLayoutProvider({
   const pathname = usePathname();
 
   const isAdminRoute = pathname?.startsWith("/admin");
+  const { info } = useGetData();
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyPhone = async () => {
+    const phoneNumber = info?.phone || "0123456789";
+    try {
+      await navigator.clipboard.writeText(phoneNumber);
+      setCopied(true);
+      toast.success("Đã sao chép số điện thoại");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Không thể sao chép. Vui lòng thử lại.");
+    }
+  };
 
   if (isAdminRoute) {
     return (
@@ -35,9 +44,9 @@ export default function ClientLayoutProvider({
     );
   }
 
-  const PHONE_NUMBER = "0123456789";
-  const ZALO_URL = "https://zalo.me/0123456789";
-  const FB_URL = "https://m.me/yourpage";
+  const PHONE_NUMBER = info?.phone || "0123456789";
+  const ZALO_URL = info?.zalo || "https://zalo.me/0123456789";
+  const FB_URL = info?.fanpage || "https://m.me/yourpage";
 
   return (
     <ReactQueryProvider>
@@ -76,8 +85,9 @@ export default function ClientLayoutProvider({
             <span className="font-bold text-sm tracking-tighter">FB</span>
           </a>
 
-          <a
-            href={`tel:${PHONE_NUMBER}`}
+          <button
+            type="button"
+            onClick={() => setIsPhoneModalOpen(true)}
             aria-label="Gọi tổng đài CSKH"
             className="relative flex items-center justify-center w-12 h-12 bg-green-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200"
           >
@@ -85,8 +95,71 @@ export default function ClientLayoutProvider({
               CSKH
             </span>
             <PhoneCall className="w-5 h-5" />
-          </a>
+          </button>
         </div>
+
+        {isPhoneModalOpen && (
+          <div
+            className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setIsPhoneModalOpen(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-xl bg-white shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b px-5 py-4">
+                <h2 className="text-base font-bold text-gray-800">
+                  Hotline CSKH
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsPhoneModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Đóng"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 px-5 py-5">
+                <p className="text-sm text-gray-500">
+                  Liên hệ tổng đài chăm sóc khách hàng
+                </p>
+
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                  <span className="text-lg font-bold tracking-wide text-gray-900">
+                    {PHONE_NUMBER}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyPhone}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-green-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-green-600"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Đã sao chép
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Sao chép
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <a
+                  href={`tel:${PHONE_NUMBER}`}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-green-500 bg-white px-4 py-2.5 text-sm font-semibold text-green-600 transition-colors hover:bg-green-50"
+                >
+                  <PhoneCall className="h-4 w-4" />
+                  Gọi ngay
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ReactQueryProvider>
   );

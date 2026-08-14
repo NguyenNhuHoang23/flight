@@ -155,3 +155,58 @@ export async function PUT(
 ) {
   return proxyUpdate(request, context);
 }
+
+/**
+ * DELETE ORDER
+ */
+export async function DELETE(
+  request: NextRequest,
+  context: RouteContext,
+) {
+  try {
+    if (!API_URL) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "NEXT_PUBLIC_API_URL chưa được cấu hình",
+        },
+        { status: 500 },
+      );
+    }
+
+    const { id } = await context.params;
+
+    const authorization = request.headers.get("Authorization");
+
+    const response = await fetch(
+      `${API_URL}/api/admin/orders/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          ...(authorization
+            ? {
+                Authorization: authorization,
+              }
+            : {}),
+        },
+      },
+    );
+
+    const data = await response.json();
+
+    return NextResponse.json(data, {
+      status: response.status,
+    });
+  } catch (error) {
+    console.error("DELETE ORDER ERROR:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Không thể xóa đơn hàng",
+      },
+      { status: 500 },
+    );
+  }
+}

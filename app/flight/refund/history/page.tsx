@@ -340,7 +340,7 @@ const formatMoney = (value: string | number) => {
 
                       {/* Thời gian */}
                       <td className="py-3.5 px-4 text-center text-xs text-gray-500 whitespace-nowrap">
-                        {item.created_at}
+                        {item.time}/{item.date}
                       </td>
                     </tr>
                   ))

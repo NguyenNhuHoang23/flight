@@ -1,12 +1,10 @@
 import { Plane } from "lucide-react";
+import Image from "next/image";
 
 export function Logo() {
   return (
     <a href="#" className="flex items-center space-x-1.5 group">
-      {/* Icon Badge thu nhỏ */}
-      <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#d90429] to-[#ff4d6d] flex items-center justify-center shadow-sm shadow-red-200 group-hover:scale-105 transition-transform">
-        <Plane className="w-3.5 h-3.5 text-white -rotate-45" />
-      </div>
+      <Image src="/logo.jpg" alt="Logo" width={35} height={35} />
 
       {/* Brand Name thu nhỏ */}
       <div className="flex flex-col">

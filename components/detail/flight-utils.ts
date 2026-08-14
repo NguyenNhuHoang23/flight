@@ -30,7 +30,7 @@ export const AIRLINE_INFO: Record<string, AirlineInfo> = {
   "9G": {
     // Thêm Pacific Airlines nếu hệ thống có trả về
     name: "Pacific Airlines",
-    image: "/images/airlines/9g.png",
+    image: "/images/airlines/sun.jpg",
     color: "text-orange-600",
     bg: "bg-orange-50",
   },

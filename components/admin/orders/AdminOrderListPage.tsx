@@ -184,6 +184,7 @@ export default function AdminOrderListPage() {
                 index={(currentPage - 1) * 3 + index}
                 onViewBill={setViewingBillUrl}
                 onPrintTicket={handlePrintTicket}
+                onDeleted={refetch}
               />
             ))}
           </div>

@@ -1,12 +1,16 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import { Order } from "./data";
 import OrderStatusBadge from "./OrderStatusBadge";
+import { useAuthStore } from "@/store/auth-store";
 
 interface OrderCardProps {
   order: Order;
   index: number;
   onViewBill: (url: string) => void;
   onPrintTicket: (order: Order) => void;
+  onDeleted?: () => void;
 }
 export const formatUtcToVietnam = (
   value?: string | null,
@@ -40,13 +44,63 @@ export default function OrderCard({
   index,
   onViewBill,
   onPrintTicket,
+  onDeleted,
 }: OrderCardProps) {
-  console.log(order);
-  
+  const token = useAuthStore((state) => state.accessToken);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    const confirmed = confirm(
+      `Bạn có chắc chắn muốn xóa đơn hàng #${order.id}?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleting(true);
+
+      if (!token) {
+        throw new Error("Không tìm thấy token đăng nhập");
+      }
+
+      const response = await fetch(
+        `/api/admin/order/${encodeURIComponent(order.id)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.status === 401) {
+        localStorage.removeItem("admin-auth");
+        window.location.href = "/admin/login";
+        return;
+      }
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Không thể xóa đơn hàng");
+      }
+
+      alert("Xóa đơn hàng thành công!");
+      onDeleted?.();
+    } catch (error) {
+      alert(
+        error instanceof Error ? error.message : "Không thể xóa đơn hàng",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const getBillUrl = () => {
     if (!order.paymentProofUrl) return "";
 
-    return `${process.env.NEXT_PUBLIC_API_URL}/${order.paymentProofUrl}`;
+    return `${order.paymentProofUrl}`;
   };
 
   return (
@@ -227,6 +281,15 @@ export default function OrderCard({
       {/* RIGHT */}
       <div className="p-4 bg-slate-50/50 border-t lg:border-t-0 lg:border-l border-slate-200 lg:w-48 shrink-0 flex flex-col justify-end items-end gap-3">
         <div className="flex lg:flex-col gap-1.5 w-full">
+          
+        <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex-1 px-2.5 py-1.5 rounded bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 disabled:cursor-not-allowed text-white font-semibold text-xs flex items-center justify-center gap-1 transition"
+          >
+            {deleting ? "Đang xóa..." : "🗑 Xóa"}
+          </button>
           <button
             type="button"
             onClick={() => onPrintTicket(order)}
@@ -234,6 +297,7 @@ export default function OrderCard({
           >
             🛈 In vé
           </button>
+
         </div>
       </div>
     </div>

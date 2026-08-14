@@ -1,13 +1,28 @@
 "use client";
 import React from "react";
-import { ArrowUpRight, Home, Wallet } from "lucide-react";
+import { Home } from "lucide-react";
 import { Logo } from "./Logo";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useGetData } from "@/context/GetContext";
 
+function navLinkClass(isActive: boolean, extra = "") {
+  return `${extra} px-3 py-2.5 uppercase ${
+    isActive ? "bg-[#004d28]" : "hover:bg-[#004d28]"
+  }`;
+}
+
 export default function Header() {
-    const { info, isLoading, error: loadError, refetchInfo } = useGetData();
-  
+  const pathname = usePathname();
+  const { info, isLoading, error: loadError } = useGetData();
+
+  const isHome = pathname === "/";
+  const isRefund =
+    pathname.startsWith("/flight/refund") &&
+    !pathname.startsWith("/flight/refund/history");
+  const isHistory = pathname.startsWith("/flight/refund/history");
+  const isBlog = pathname.startsWith("/blog");
+
   return (
     <>
       {/* 1. Header Top */}
@@ -31,40 +46,35 @@ export default function Header() {
         <div className="max-w-5xl mx-auto flex flex-wrap items-center">
           <Link
             href="/"
-            className="flex items-center space-x-1 bg-[#004d28] px-3 py-2.5 uppercase text-white"
+            className={navLinkClass(
+              isHome,
+              "flex items-center space-x-1 text-white"
+            )}
           >
             <Home className="w-4 h-4" />
             <span>TRANG CHỦ</span>
           </Link>
 
-          {/* Option NẠP TIỀN */}
-          <Link
-            href="/flight/refund"
-            className="px-3 py-2.5 hover:bg-[#004d28] uppercase"
-          >
+          <Link href="/flight/refund" className={navLinkClass(isRefund)}>
             <span>HOÀN TIỀN</span>
           </Link>
 
-          {/* Option RÚT TIỀN */}
           <Link
             href="/flight/refund/history"
-            className="px-3 py-2.5 hover:bg-[#004d28] uppercase"
+            className={navLinkClass(isHistory)}
           >
             <span>LỊCH SỬ</span>
           </Link>
 
-          <Link
-            href="/blog"
-            className="px-3 py-2.5 hover:bg-[#004d28] uppercase"
-          >
+          <Link href="/blog" className={navLinkClass(isBlog)}>
             TIN TỨC
           </Link>
 
-          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
+          <Link href="/" className={navLinkClass(false)}>
             QUẢN LÝ ĐẶT CHỖ
           </Link>
 
-          <Link href="/" className="px-3 py-2.5 hover:bg-[#004d28] uppercase">
+          <Link href="/" className={navLinkClass(false)}>
             LIÊN HỆ
           </Link>
         </div>

@@ -191,13 +191,13 @@ export default function FlightBookingUI({
                 <span className="text-orange-500 font-bold">::</span>
                 <span>
                   Vé máy bay Tuy Hòa đi TP. Hồ Chí Minh giá rẻ hôm nay cùng
-                  Senbay
+                  vemaybay24h
                 </span>
               </li>
               <li className="flex items-start space-x-1.5 text-blue-700 hover:underline cursor-pointer">
                 <span className="text-orange-500 font-bold">::</span>
                 <span>
-                  Vé máy bay Tuy Hòa đi Hà Nội giá rẻ hôm nay cùng Senbay
+                  Vé máy bay Tuy Hòa đi Hà Nội giá rẻ hôm nay cùng vemaybay24h
                 </span>
               </li>
             </ul>
@@ -302,7 +302,7 @@ export default function FlightBookingUI({
                   Thanh toán trực tiếp tại văn phòng
                 </div>
                 <div className="text-gray-600 mt-0.5">
-                  Quý khách có thể tới văn phòng của Senbay để mua vé và Thanh
+                  Quý khách có thể tới văn phòng của vemaybay24h để mua vé và Thanh
                   toán
                 </div>
               </div>
