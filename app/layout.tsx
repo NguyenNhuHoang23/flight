@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientLayoutProvider from "./ClientLayoutProvider";
 import { GetClientProvider } from "@/context/GetContext";
+import FacebookPixel from "./FacebookPixel";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -34,6 +35,7 @@ export default function RootLayout({
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
       <body className="min-h-full flex flex-col">
+        <FacebookPixel />
         <ClientLayoutProvider>{children}</ClientLayoutProvider>
       </body>
     </html>
