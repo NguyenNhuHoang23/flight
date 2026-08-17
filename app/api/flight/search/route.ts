@@ -16,7 +16,6 @@ export async function POST(request: Request) {
         ApiPassword: "2MD0ExkdN6cP",
         Currency: "VND",
         Language: "vi",
-        IpAddress: "116.96.46.43",
       },
       ...body, // Nhận các tham số ListRoute, Adt, Chd, Inf từ Frontend
     };
