@@ -16,6 +16,7 @@ import React, { useRef, useState, Suspense, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useBankAccounts } from "@/hook/useBankAccounts";
 import { useUpdateOrderBill } from "@/hook/useCreateOrder";
+import PointingArrows from "@/components/admin/payment/PointingArrows";
 
 // Định nghĩa kiểu dữ liệu cho chuyến bay hiển thị UI
 interface FlightDetail {
@@ -451,12 +452,14 @@ function PaymentContent() {
                     onClick={() => fileInputRef.current?.click()}
                     className="cursor-pointer group flex flex-col items-center"
                   >
-                    <div className="mx-auto flex h-12 px-4 items-center justify-center gap-1.5 rounded-full bg-white shadow-sm border border-orange-200 group-hover:scale-105 transition">
-                      <Upload className="h-5 w-5 text-[#ff512b]" />
-                      <span className="text-xs font-bold text-[#ff512b]">
-                        Up bill
-                      </span>
-                    </div>
+                    <PointingArrows>
+                      <div className="mx-auto flex h-12 px-4 items-center justify-center gap-1.5 rounded-full bg-white shadow-sm border border-orange-200">
+                        <Upload className="h-5 w-5 text-[#ff512b]" />
+                        <span className="text-xs font-bold text-[#ff512b]">
+                          Up bill
+                        </span>
+                      </div>
+                    </PointingArrows>
 
                     <h3 className="mt-3 text-base font-bold text-gray-800">
                       Bạn đã chuyển khoản thành công?

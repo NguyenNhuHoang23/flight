@@ -38,6 +38,68 @@ body {
   animation: booking-scroll 28s linear infinite;
 }
 
+@keyframes finger-in-out-right {
+  0%,
+  100% {
+    transform: translateX(-18px);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes finger-in-out-left {
+  0%,
+  100% {
+    transform: translateX(18px);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+}
+
+.finger-in-out-right,
+.finger-in-out-left {
+  display: inline-block;
+  will-change: transform;
+}
+
+.finger-in-out-right {
+  animation: finger-in-out-right 0.65s ease-in-out infinite;
+}
+
+.finger-in-out-left {
+  animation: finger-in-out-left 0.65s ease-in-out infinite;
+}
+
+@keyframes bill-border-run {
+  to {
+    offset-distance: 100%;
+  }
+}
+
+.bill-border-orbit {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow: visible;
+}
+
+.bill-border-plane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  offset-anchor: center;
+  animation: bill-border-run 5.5s linear infinite;
+}
+
+.bill-border-plane-delay {
+  animation-delay: -2.25s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-booking-scroll {
     animation: none;

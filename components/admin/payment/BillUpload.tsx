@@ -1,5 +1,6 @@
 import { CheckCircle2, Loader2, Ticket, Trash2, Upload } from "lucide-react";
 import React, { useRef } from "react";
+import PointingArrows from "./PointingArrows";
 
 interface BillUploadProps {
   billFile: File | null;
@@ -48,11 +49,13 @@ export default function BillUpload({
           onClick={() => fileInputRef.current?.click()}
           className="group flex cursor-pointer flex-col items-center"
         >
-          <div className="mx-auto flex h-12 items-center justify-center gap-1.5 rounded-full border border-orange-200 bg-white px-4 shadow-sm transition group-hover:scale-105">
-            <Upload className="h-5 w-5 text-[#ff512b]" />
+          <PointingArrows>
+            <div className="flex h-12 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-orange-200 bg-white px-4">
+              <Upload className="h-5 w-5 text-[#ff512b]" />
 
-            <span className="text-xs font-bold text-[#ff512b]">Up bill</span>
-          </div>
+              <span className="text-xs font-bold text-[#ff512b]">Up bill chuyển khoản</span>
+            </div>
+          </PointingArrows>
 
           <h3 className="mt-3 text-base font-bold text-gray-800">
             Bạn đã chuyển khoản thành công?
