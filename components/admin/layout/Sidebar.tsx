@@ -146,11 +146,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
         <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 shrink-0">
           <div className="flex items-center gap-3 px-1 py-1">
             <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center font-medium text-white border border-slate-600 shrink-0">
-              H
+              A
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate leading-snug">
-                Hoàng Admin
+                Admin
               </p>
               <p className="text-xs text-slate-400 truncate leading-snug">
                 admin@system.io

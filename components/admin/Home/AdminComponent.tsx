@@ -91,7 +91,7 @@ export default function AdminDashboard() {
     },
     {
       id: "ORD-7826",
-      customer: "Phạm Hoàng D",
+      customer: "Phạm Admin D",
       email: "dpham@example.com",
       product: "Tư vấn 1-on-1",
       amount: "$120.00",
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
             Tổng quan hệ thống
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Xin chào Hoàng, đây là tình hình kinh doanh hôm nay.
+            Xin chào Admin, đây là tình hình kinh doanh hôm nay.
           </p>
         </div>
         <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-xl text-xs font-medium text-slate-600">
