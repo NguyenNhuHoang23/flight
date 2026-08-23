@@ -22,6 +22,7 @@ export default function Header() {
     !pathname.startsWith("/flight/refund/history");
   const isHistory = pathname.startsWith("/flight/refund/history");
   const isBlog = pathname.startsWith("/blog");
+  const isManage = pathname.startsWith("/flight/manage");
 
   return (
     <>
@@ -70,7 +71,7 @@ export default function Header() {
             TIN TỨC
           </Link>
 
-          <Link href="/" className={navLinkClass(false)}>
+          <Link href="/flight/manage" className={navLinkClass(isManage)}>
             QUẢN LÝ ĐẶT CHỖ
           </Link>
 

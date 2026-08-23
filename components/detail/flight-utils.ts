@@ -21,9 +21,8 @@ export const AIRLINE_INFO: Record<string, AirlineInfo> = {
     bg: "bg-blue-50",
   },
   QH: {
-    // Sửa mã IATA từ BB -> QH cho Bamboo Airways
     name: "Bamboo Airways",
-    image: "/images/airlines/qh.png",
+    image: "/images/airlines/bb.png",
     color: "text-[#ff6600]",
     bg: "bg-orange-50",
   },
@@ -35,6 +34,35 @@ export const AIRLINE_INFO: Record<string, AirlineInfo> = {
     bg: "bg-orange-50",
   },
 };
+
+export function getAirlineMeta(
+  airlineCode?: string | null,
+  airlineName?: string | null,
+): AirlineInfo {
+  const code = (airlineCode || "").toUpperCase();
+
+  if (code && AIRLINE_INFO[code]) {
+    return AIRLINE_INFO[code];
+  }
+
+  const name = (airlineName || "").toLowerCase();
+
+  if (name.includes("vietjet")) return AIRLINE_INFO.VJ;
+  if (name.includes("bamboo")) return AIRLINE_INFO.QH;
+  if (name.includes("vietravel")) return AIRLINE_INFO.VU;
+  if (name.includes("pacific") || name.includes("sun")) {
+    return AIRLINE_INFO["9G"];
+  }
+
+  if (name.includes("vietnam")) return AIRLINE_INFO.VN;
+
+  return {
+    name: airlineName || airlineCode || "Hãng hàng không",
+    image: "/images/airlines/vn.png",
+    color: "text-gray-700",
+    bg: "bg-gray-50",
+  };
+}
 
 export const formatPrice = (price?: number) => {
   if (price === undefined || price === null) return "0";

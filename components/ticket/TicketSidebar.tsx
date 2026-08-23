@@ -6,8 +6,14 @@ import {
   PassengerInfo,
   TicketFormState,
 } from "./ticket-types";
+import type { OrderDetail } from "@/hook/useGetOrderDetail";
+import { useDebouncedOrderSave } from "@/hook/useUpdateOrderAll";
 
 interface TicketSidebarProps {
+  orderId: string;
+  orderDetail: OrderDetail;
+  ticketsData: TicketFormState[];
+  token: string;
   isRoundTrip: boolean;
   activeFlightIndex: number;
   setActiveFlightIndex: React.Dispatch<
@@ -38,9 +44,14 @@ interface TicketSidebarProps {
   handleAddPassenger: () => void;
 
   handleRemovePassenger: (index: number) => void;
+  onSaved?: (order: OrderDetail) => void;
 }
 
 export default function TicketSidebar({
+  orderId,
+  orderDetail,
+  ticketsData,
+  token,
   isRoundTrip,
   activeFlightIndex,
   setActiveFlightIndex,
@@ -53,7 +64,16 @@ export default function TicketSidebar({
   handlePassengerChange,
   handleAddPassenger,
   handleRemovePassenger,
+  onSaved,
 }: TicketSidebarProps) {
+  const { saveStatus, saveStatusLabel } = useDebouncedOrderSave({
+    token,
+    orderId,
+    orderDetail,
+    ticketsData,
+    onSaved,
+  });
+
   return (
     <div className="no-print lg:col-span-3 bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 max-h-[85vh] overflow-y-auto">
       {isRoundTrip && (
@@ -586,6 +606,20 @@ export default function TicketSidebar({
           </div>
         </div>
       </div>
+
+      {saveStatusLabel && (
+        <div
+          className={`sticky bottom-0 pt-3 text-xs font-semibold ${
+            saveStatus === "error"
+              ? "text-red-600"
+              : saveStatus === "saved"
+                ? "text-emerald-600"
+                : "text-slate-500"
+          }`}
+        >
+          {saveStatusLabel}
+        </div>
+      )}
     </div>
   );
 }

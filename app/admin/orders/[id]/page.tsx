@@ -8,7 +8,7 @@ import React, {
 
 import { useRouter } from "next/navigation";
 
-import { useGetOrderDetail } from "@/hook/useGetOrderDetail";
+import { useGetOrderDetail, OrderDetail } from "@/hook/useGetOrderDetail";
 import { useAuthStore } from "@/store/auth-store";
 import {
   buildTicketFormState,
@@ -40,7 +40,6 @@ export default function CustomTicketPage({
     isError,
     error,
   } = useGetOrderDetail(token || "", orderId);
-  console.log("🚀 ~ CustomTicketPage ~ orderDetailResponse:", orderDetailResponse)
 
   const orderDetail = orderDetailResponse?.data;
 
@@ -61,6 +60,11 @@ export default function CustomTicketPage({
   const [ticketsData, setTicketsData] = useState<
     TicketFormState[]
   >([]);
+
+  const [savedOrderDetail, setSavedOrderDetail] =
+    useState<OrderDetail | null>(null);
+
+  const sidebarOrderDetail = savedOrderDetail ?? orderDetail;
 
   useEffect(() => {
     if (!orderDetail?.flights?.length) {
@@ -83,7 +87,8 @@ export default function CustomTicketPage({
       ),
     );
     setActiveFlightIndex(0);
-  }, [orderDetail]);
+    setSavedOrderDetail(null);
+  }, [orderDetail?.id]);
 
   const customData =
     ticketsData[activeFlightIndex] ??
@@ -94,16 +99,30 @@ export default function CustomTicketPage({
         )
       : null);
 
+  const sharedTicketFields: Array<keyof TicketFormState> = [
+    "pnr",
+    "ticketStatus",
+  ];
+
   const handleInputChange = (
     field: keyof TicketFormState,
     value: string,
   ) => {
     setTicketsData((prev) => {
       const next = [...prev];
+
+      if (sharedTicketFields.includes(field)) {
+        return next.map((ticket) => ({
+          ...ticket,
+          [field]: value,
+        }));
+      }
+
       next[activeFlightIndex] = {
         ...next[activeFlightIndex],
         [field]: value,
       };
+
       return next;
     });
   };
@@ -113,34 +132,29 @@ export default function CustomTicketPage({
     field: keyof PassengerInfo,
     value: string,
   ) => {
-    setTicketsData((prev) => {
-      const next = [...prev];
-      const updatedPassengers = [
-        ...next[activeFlightIndex].passengers,
-      ];
+    setTicketsData((prev) =>
+      prev.map((ticket) => {
+        const updatedPassengers = [...ticket.passengers];
 
-      updatedPassengers[index] = {
-        ...updatedPassengers[index],
-        [field]: value,
-      };
+        updatedPassengers[index] = {
+          ...updatedPassengers[index],
+          [field]: value,
+        };
 
-      next[activeFlightIndex] = {
-        ...next[activeFlightIndex],
-        passengers: updatedPassengers,
-      };
-
-      return next;
-    });
+        return {
+          ...ticket,
+          passengers: updatedPassengers,
+        };
+      }),
+    );
   };
 
   const handleAddPassenger = () => {
-    setTicketsData((prev) => {
-      const next = [...prev];
-
-      next[activeFlightIndex] = {
-        ...next[activeFlightIndex],
+    setTicketsData((prev) =>
+      prev.map((ticket) => ({
+        ...ticket,
         passengers: [
-          ...next[activeFlightIndex].passengers,
+          ...ticket.passengers,
           {
             name: "HÀNH KHÁCH MỚI",
             dob: "01/01/1990",
@@ -148,29 +162,20 @@ export default function CustomTicketPage({
             gate: "",
           },
         ],
-      };
-
-      return next;
-    });
+      })),
+    );
   };
 
   const handleRemovePassenger = (index: number) => {
     setTicketsData((prev) => {
-      const next = [...prev];
-      const updatedPassengers = next[
-        activeFlightIndex
-      ].passengers.filter((_, i) => i !== index);
-
-      if (updatedPassengers.length === 0) {
+      if (prev[0]?.passengers.length <= 1) {
         return prev;
       }
 
-      next[activeFlightIndex] = {
-        ...next[activeFlightIndex],
-        passengers: updatedPassengers,
-      };
-
-      return next;
+      return prev.map((ticket) => ({
+        ...ticket,
+        passengers: ticket.passengers.filter((_, i) => i !== index),
+      }));
     });
   };
 
@@ -280,6 +285,10 @@ export default function CustomTicketPage({
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <TicketSidebar
+          orderId={orderId}
+          orderDetail={sidebarOrderDetail!}
+          ticketsData={ticketsData}
+          token={token || ""}
           isRoundTrip={isRoundTrip}
           activeFlightIndex={activeFlightIndex}
           setActiveFlightIndex={setActiveFlightIndex}
@@ -292,6 +301,9 @@ export default function CustomTicketPage({
           handlePassengerChange={handlePassengerChange}
           handleAddPassenger={handleAddPassenger}
           handleRemovePassenger={handleRemovePassenger}
+          onSaved={(updatedOrder) => {
+            setSavedOrderDetail(updatedOrder);
+          }}
         />
 
         <TicketPreview
