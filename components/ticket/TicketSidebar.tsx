@@ -342,6 +342,46 @@ export default function TicketSidebar({
           />
         </div>
 
+        {/* DEPARTURE CITY */}
+        <div>
+          <label className="block text-slate-500 mb-1 font-semibold">
+            Điểm đi (Tên thành phố):
+          </label>
+
+          <input
+            type="text"
+            value={customData.departureCity}
+            onChange={(e) =>
+              handleInputChange(
+                "departureCity",
+                e.target.value,
+              )
+            }
+            placeholder="VD: Hồ Chí Minh"
+            className="w-full p-2 border rounded text-black"
+          />
+        </div>
+
+        {/* ARRIVAL CITY */}
+        <div>
+          <label className="block text-slate-500 mb-1 font-semibold">
+            Điểm đến (Tên thành phố):
+          </label>
+
+          <input
+            type="text"
+            value={customData.arrivalCity}
+            onChange={(e) =>
+              handleInputChange(
+                "arrivalCity",
+                e.target.value,
+              )
+            }
+            placeholder="VD: Hà Nội"
+            className="w-full p-2 border rounded text-black"
+          />
+        </div>
+
         {/* DEPART TIME */}
         <div>
           <label className="block text-slate-500 mb-1 font-semibold">

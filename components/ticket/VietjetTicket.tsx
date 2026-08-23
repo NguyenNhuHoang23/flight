@@ -163,8 +163,7 @@ export default function VietjetTicket({
             </div>
 
             <div className="font-black text-xs text-black uppercase mt-0.5">
-              {customData.ticketStatus ||
-                "ĐÃ XÁC NHẬN"}
+              {customData.ticketStatus}
             </div>
           </div>
 
