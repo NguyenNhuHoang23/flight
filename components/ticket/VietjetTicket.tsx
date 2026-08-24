@@ -167,6 +167,16 @@ export default function VietjetTicket({
             </div>
           </div>
 
+          <div className="text-center">
+            <div className="text-[9px] text-slate-500 font-bold uppercase">
+              HÀNH LÝ KÝ GỬI
+            </div>
+
+            <div className="font-black text-xs text-black uppercase mt-0.5">
+              {customData.baggage || "20KG"}
+            </div>
+          </div>
+
           <div className="text-right">
             <div className="text-[9px] text-slate-500 font-bold uppercase">
               MÃ CODE

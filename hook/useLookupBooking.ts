@@ -9,6 +9,8 @@ export interface LookupPassenger {
   name: string;
   type: string;
   dateOfBirth: string;
+  departBaggage: string;
+  returnBaggage: string;
 }
 
 export interface LookupFlight {
@@ -32,6 +34,7 @@ export interface LookupOrder {
   customerName: string;
   customerPhone: string;
   totalAmount: number;
+  baggage: string;
   passengers: LookupPassenger[];
   flights: LookupFlight[];
 }
@@ -45,6 +48,11 @@ interface ApiPassenger {
   full_name: string;
   passenger_type: string;
   date_of_birth: string | null;
+  baggage?: string | null;
+  depart_baggage?: string | null;
+  return_baggage?: string | null;
+  outbound_baggage?: string | null;
+  checked_baggage?: string | null;
 }
 
 interface ApiFlight {
@@ -56,6 +64,7 @@ interface ApiFlight {
   departure_at: string;
   arrival_at: string | null;
   trip_type?: "outbound" | "return" | null;
+  baggage?: string | null;
 }
 
 interface ApiOrder {
@@ -64,6 +73,7 @@ interface ApiOrder {
   contact_name: string | null;
   contact_phone: string | null;
   total_amount: string | number;
+  baggage?: string | null;
   passengers: ApiPassenger[];
   flights: ApiFlight[];
 }
@@ -74,6 +84,21 @@ interface LookupResponse {
   data: ApiOrder;
 }
 
+const DEFAULT_BAGGAGE = "20KG KÝ GỬI";
+
+function formatBaggage(value?: string | null): string {
+  if (!value || value === "0") {
+    return DEFAULT_BAGGAGE;
+  }
+
+  const trimmed = value.trim();
+
+  if (/^\d+$/.test(trimmed)) {
+    return `${trimmed}KG KÝ GỬI`;
+  }
+
+  return trimmed.toUpperCase();
+}
 
 function formatDateTime(date: string | null | undefined) {
   if (!date) {
@@ -92,12 +117,15 @@ function formatDateTime(date: string | null | undefined) {
 }
 
 function mapOrder(order: ApiOrder): LookupOrder {
+  const orderBaggage = formatBaggage(order.baggage);
+
   return {
     id: order.order_code,
     status: order.status,
     customerName: order.contact_name || "Chưa có tên",
     customerPhone: order.contact_phone || "Chưa có SĐT",
     totalAmount: Number(order.total_amount || 0),
+    baggage: orderBaggage,
     passengers: (order.passengers || []).map((passenger) => ({
       name: passenger.full_name,
       type:
@@ -109,6 +137,19 @@ function mapOrder(order: ApiOrder): LookupOrder {
               ? "Em bé"
               : passenger.passenger_type,
       dateOfBirth: passenger.date_of_birth || "",
+      departBaggage: formatBaggage(
+        passenger.depart_baggage ||
+          passenger.outbound_baggage ||
+          passenger.baggage ||
+          passenger.checked_baggage ||
+          order.baggage,
+      ),
+      returnBaggage: formatBaggage(
+        passenger.return_baggage ||
+          passenger.baggage ||
+          passenger.checked_baggage ||
+          order.baggage,
+      ),
     })),
     flights: (order.flights || []).map((flight) => {
       const departure = parseAirportValue(flight.departure_airport);

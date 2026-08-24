@@ -111,9 +111,13 @@ function PassengerCard({
         </div>
         <div className="rounded-md bg-gray-50 px-2.5 py-1.5">
           <p className="text-gray-500">
-            {hasReturnFlight ? "Hành lý (đi/về)" : "Hành lý"}
+            {hasReturnFlight ? "Hành lý (đi/về)" : "Hành lý ký gửi"}
           </p>
-          <p className="mt-0.5 font-medium text-gray-800">—</p>
+          <p className="mt-0.5 font-medium text-gray-800">
+            {hasReturnFlight
+              ? `${passenger.departBaggage} / ${passenger.returnBaggage}`
+              : passenger.departBaggage}
+          </p>
         </div>
       </div>
     </div>
@@ -203,7 +207,6 @@ function FlightCard({
 export default function BookingLookupResult({
   order,
 }: BookingLookupResultProps) {
-  console.log(order);
   const primaryFlight = order.flights[0];
   const airlineMeta = getAirlineMeta(
     primaryFlight?.airlineCode,
@@ -262,13 +265,14 @@ export default function BookingLookupResult({
             Thông tin đặt chỗ
           </h3>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <InfoCard label="Mã đặt chỗ" value={order.id} highlight />
             <InfoCard
               label="Hãng hàng không"
               value={primaryFlight?.airline || airlineMeta.name}
             />
             <InfoCard label="Trạng thái" value={<OrderStatusBadge status={order.status} />} />
+            <InfoCard label="Hành lý ký gửi" value={order.baggage} />
           </div>
         </section>
 
@@ -341,11 +345,17 @@ export default function BookingLookupResult({
                     </td>
                     {hasReturnFlight ? (
                       <>
-                        <td className="px-3 py-2 text-gray-400">—</td>
-                        <td className="px-3 py-2 text-gray-400">—</td>
+                        <td className="px-3 py-2 font-medium text-gray-800">
+                          {passenger.departBaggage}
+                        </td>
+                        <td className="px-3 py-2 font-medium text-gray-800">
+                          {passenger.returnBaggage}
+                        </td>
                       </>
                     ) : (
-                      <td className="px-3 py-2 text-gray-400">—</td>
+                      <td className="px-3 py-2 font-medium text-gray-800">
+                        {passenger.departBaggage}
+                      </td>
                     )}
                   </tr>
                 ))}
@@ -379,10 +389,6 @@ export default function BookingLookupResult({
               Người liên hệ
             </h4>
             <p className="text-sm font-semibold text-gray-900">{order.customerName}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-600">
-              <Phone className="h-3 w-3 shrink-0" />
-              {order.customerPhone}
-            </p>
           </div>
 
           <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3">

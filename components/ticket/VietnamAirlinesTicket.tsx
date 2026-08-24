@@ -116,6 +116,13 @@ export default function VietnamAirlinesTicket({
                     {customData.ticketStatus}
                   </span>
                 </div>
+
+                <div className="text-sm text-black grid grid-cols gap-0.5">
+                  Hành lý ký gửi:{" "}
+                  <span className="font-bold text-slate-900">
+                    {customData.baggage || "20KG"}
+                  </span>
+                </div>
               </div>
 
               <div className="col-span-2 rounded-sm text-xs relative">
