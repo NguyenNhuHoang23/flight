@@ -10,6 +10,7 @@ interface OrderFilterProps {
 const STATUS_TABS = [
   { id: "all", label: "Tất cả" },
   { id: "pending", label: "Chờ duyệt" },
+  { id: "paid", label: "Đã thanh toán" },
   { id: "confirmed", label: "Đã xuất vé" },
   { id: "cancelled", label: "Đã hủy" },
 ];

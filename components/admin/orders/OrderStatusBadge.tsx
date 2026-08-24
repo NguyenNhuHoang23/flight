@@ -24,6 +24,15 @@ export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
     );
   }
 
+  if (status === "paid") {
+    return (
+      <span className="inline-flex items-center gap-1 bg-sky-100 text-sky-800 border border-sky-300 px-2 py-0.5 rounded-full font-bold text-[11px]">
+        <span className="w-1.5 h-1.5 rounded-full bg-sky-600" />
+        Đã thanh toán
+      </span>
+    );
+  }
+
   return (
     <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-full font-bold text-[11px]">
       <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />

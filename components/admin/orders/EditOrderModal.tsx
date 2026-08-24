@@ -135,6 +135,7 @@ export default function EditOrderModal({
               className="w-full p-2 border border-slate-300 rounded text-base focus:ring-2 focus:ring-sky-500 outline-none font-semibold"
             >
               <option value="pending">Chờ duyệt</option>
+              <option value="paid">Đã thanh toán</option>
               <option value="confirmed">Đã xuất vé</option>
               <option value="cancelled">Đã hủy</option>
             </select>

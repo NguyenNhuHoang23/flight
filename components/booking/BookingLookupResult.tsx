@@ -203,6 +203,7 @@ function FlightCard({
 export default function BookingLookupResult({
   order,
 }: BookingLookupResultProps) {
+  console.log(order);
   const primaryFlight = order.flights[0];
   const airlineMeta = getAirlineMeta(
     primaryFlight?.airlineCode,

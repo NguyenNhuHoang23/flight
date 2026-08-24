@@ -1,6 +1,6 @@
 export type FlightType = "one_way" | "round_trip" | "multi_city";
 
-export type OrderStatus = "pending" | "confirmed" | "cancelled";
+export type OrderStatus = "pending" | "confirmed" | "paid" | "cancelled";
 
 /** UI passenger shape dùng trong danh sách đơn hàng */
 export interface Passenger {

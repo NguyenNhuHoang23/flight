@@ -112,6 +112,8 @@ function mapTicketStatusToOrderStatus(ticketStatus: string) {
   switch (ticketStatus) {
     case "ĐÃ XÁC NHẬN":
       return "confirmed";
+    case "ĐÃ THANH TOÁN":
+      return "paid";
     case "ĐÃ HỦY":
       return "cancelled";
     case "ĐANG XỬ LÝ":

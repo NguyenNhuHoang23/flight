@@ -539,6 +539,9 @@ export default function TicketSidebar({
             <option value="ĐÃ XÁC NHẬN">
               Đã xác nhận
             </option>
+            <option value="ĐÃ THANH TOÁN">
+              Đã thanh toán
+            </option>
           </select>
         </div>
 

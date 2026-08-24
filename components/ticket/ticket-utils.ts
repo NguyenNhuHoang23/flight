@@ -284,6 +284,8 @@ export function buildTicketFormState(
     ticketStatus:
       orderDetail.status === "confirmed"
         ? "ĐÃ XÁC NHẬN"
+        : orderDetail.status === "paid"
+          ? "ĐÃ THANH TOÁN"
         : orderDetail.status === "cancelled"
           ? "ĐÃ HỦY"
           : "CHỜ XÁC NHẬN",
