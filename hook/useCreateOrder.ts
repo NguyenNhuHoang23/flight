@@ -19,6 +19,7 @@ export interface FlightPayload {
   arrival_airport: string;
   departure_at: string;
   arrival_at?: string;
+  checked_baggage?: string | null;
 }
 
 export interface CreateOrderPayload {
@@ -143,6 +144,13 @@ export function useCreateOrder() {
 
         if (flight.arrival_at) {
           formData.append(`flights[${index}][arrival_at]`, flight.arrival_at);
+        }
+
+        if (flight.checked_baggage) {
+          formData.append(
+            `flights[${index}][checked_baggage]`,
+            flight.checked_baggage,
+          );
         }
       });
 

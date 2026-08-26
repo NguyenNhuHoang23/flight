@@ -318,6 +318,15 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
       }${numInfants ? `, ${numInfants} em bé` : ""}`,
     });
 
+    const formatCheckedBaggage = (kgValues: string[]) => {
+      const maxKg = Math.max(
+        0,
+        ...kgValues.map((value) => Number(value) || 0),
+      );
+
+      return maxKg > 0 ? `${maxKg}KG` : null;
+    };
+
     const flightsPayload: FlightPayload[] = [
       {
         trip_type: "outbound",
@@ -328,6 +337,9 @@ export const FlightBookingForm: React.FC<FlightBookingFormProps> = ({
         arrival_airport: departInfo.endPoint,
         departure_at: departInfo.departureAt,
         arrival_at: departInfo.arrivalAt,
+        checked_baggage: formatCheckedBaggage(
+          passengers.map((passenger) => passenger.departBaggage),
+        ),
       },
     ];
 const transferContent = `${flightsPayload[0].flight_number}TicKetJ0.`;
@@ -341,6 +353,9 @@ const transferContent = `${flightsPayload[0].flight_number}TicKetJ0.`;
         arrival_airport: returnInfo.endPoint,
         departure_at: returnInfo.departureAt,
         arrival_at: returnInfo.arrivalAt,
+        checked_baggage: formatCheckedBaggage(
+          passengers.map((passenger) => passenger.returnBaggage),
+        ),
       });
     }
 

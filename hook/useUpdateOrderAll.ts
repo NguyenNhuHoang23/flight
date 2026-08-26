@@ -26,6 +26,7 @@ export interface UpdateAllOrderPayload {
     arrival_airport: string;
     departure_at: string;
     arrival_at?: string | null;
+    checked_baggage?: string | null;
   }>;
 }
 
@@ -178,6 +179,7 @@ export function buildUpdateAllPayload(
       arrival_airport: ticket.arrivalCode.trim().slice(0, 10),
       departure_at: departureAt,
       arrival_at: arrivalAt,
+      checked_baggage: ticket.baggage?.trim() || null,
     };
   });
 

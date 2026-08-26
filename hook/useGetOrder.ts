@@ -18,6 +18,7 @@ interface ApiFlight {
   arrival_at: string | null;
 
   trip_type: "outbound" | "return" | string;
+  checked_baggage?: string | null;
 
   created_at: string;
   updated_at: string;
@@ -230,6 +231,8 @@ function mapOrder(order: ApiOrder): Order {
       arrivalTime: formatDate(flight.arrival_at),
 
       seatClass: "Phổ thông",
+
+      checkedBaggage: flight.checked_baggage || null,
     })),
   };
 }

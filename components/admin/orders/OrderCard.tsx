@@ -272,6 +272,11 @@ export default function OrderCard({
                     🕒 {flight.arrivalTime}
                   </div>
                 </div>
+                {flight.checkedBaggage ? (
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    🧳 {flight.checkedBaggage}
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

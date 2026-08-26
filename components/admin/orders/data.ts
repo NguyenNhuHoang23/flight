@@ -20,6 +20,7 @@ export interface OrderFlight {
   departTime: string;
   arrivalTime: string;
   seatClass: string;
+  checkedBaggage?: string | null;
 }
 
 export interface Order {
@@ -111,6 +112,7 @@ export function mapOrderFromApi(item: any): Order {
       departTime: flight.departure_at ?? flight.departTime ?? "",
       arrivalTime: flight.arrival_at ?? flight.arrivalTime ?? "",
       seatClass: flight.seatClass ?? "Phổ thông",
+      checkedBaggage: flight.checked_baggage ?? flight.checkedBaggage ?? null,
     })),
   };
 }

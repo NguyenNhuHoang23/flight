@@ -104,6 +104,7 @@ export function buildFlightPayload(
     arrival_airport: flight.EndPoint || "HAN",
     departure_at: flight.StartDate || flight.DepartDate || "",
     arrival_at: flight.EndDate || flight.ArriveDate || undefined,
+    checked_baggage: null,
   };
 }
 

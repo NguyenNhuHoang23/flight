@@ -23,6 +23,7 @@ export interface OrderFlight {
   arrival_airport: string;
   departure_at: string;
   arrival_at: string | null;
+  checked_baggage?: string | null;
   created_at: string;
   updated_at: string;
 }

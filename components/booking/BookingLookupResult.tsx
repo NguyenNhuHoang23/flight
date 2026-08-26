@@ -200,6 +200,14 @@ function FlightCard({
           </div>
         </div>
       </div>
+
+      <div className="flex items-center gap-1.5 border-t border-gray-100 px-3 py-2 text-[11px] text-gray-600">
+        <Luggage className="h-3.5 w-3.5 text-sky-600" />
+        <span className="font-medium text-gray-500">Hành lý ký gửi:</span>
+        <span className="font-semibold text-gray-800">
+          {flight.checkedBaggage}
+        </span>
+      </div>
     </div>
   );
 }

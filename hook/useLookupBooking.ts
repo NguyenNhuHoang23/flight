@@ -26,6 +26,7 @@ export interface LookupFlight {
   departureAt: string;
   arrivalAt: string;
   tripType: "outbound" | "return";
+  checkedBaggage: string;
 }
 
 export interface LookupOrder {
@@ -65,6 +66,7 @@ interface ApiFlight {
   arrival_at: string | null;
   trip_type?: "outbound" | "return" | null;
   baggage?: string | null;
+  checked_baggage?: string | null;
 }
 
 interface ApiOrder {
@@ -117,7 +119,19 @@ function formatDateTime(date: string | null | undefined) {
 }
 
 function mapOrder(order: ApiOrder): LookupOrder {
-  const orderBaggage = formatBaggage(order.baggage);
+  const outboundFlight = (order.flights || []).find(
+    (flight) => flight.trip_type === "outbound",
+  );
+  const returnFlight = (order.flights || []).find(
+    (flight) => flight.trip_type === "return",
+  );
+  const primaryFlight = outboundFlight || order.flights?.[0];
+
+  const orderBaggage = formatBaggage(
+    primaryFlight?.checked_baggage ||
+      primaryFlight?.baggage ||
+      order.baggage,
+  );
 
   return {
     id: order.order_code,
@@ -142,12 +156,14 @@ function mapOrder(order: ApiOrder): LookupOrder {
           passenger.outbound_baggage ||
           passenger.baggage ||
           passenger.checked_baggage ||
+          outboundFlight?.checked_baggage ||
           order.baggage,
       ),
       returnBaggage: formatBaggage(
         passenger.return_baggage ||
           passenger.baggage ||
           passenger.checked_baggage ||
+          returnFlight?.checked_baggage ||
           order.baggage,
       ),
     })),
@@ -168,6 +184,9 @@ function mapOrder(order: ApiOrder): LookupOrder {
         departureAt: flight.departure_at,
         arrivalAt: flight.arrival_at || "",
         tripType: flight.trip_type || "outbound",
+        checkedBaggage: formatBaggage(
+          flight.checked_baggage || flight.baggage || order.baggage,
+        ),
       };
     }),
   };

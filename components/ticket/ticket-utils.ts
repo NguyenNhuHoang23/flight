@@ -182,6 +182,7 @@ export interface TicketFlightView {
   arrivalAt: string | null;
   seatClass: string;
   tripType: "outbound" | "return";
+  checkedBaggage: string | null;
 }
 
 export function mapApiOrderToTicketOrder(orderDetail: OrderDetail) {
@@ -233,6 +234,7 @@ export function mapFlightToTicketView(
     arrivalAt: flight.arrival_at,
     seatClass: "Phổ thông",
     tripType: flight.trip_type,
+    checkedBaggage: flight.checked_baggage?.trim() || null,
   };
 }
 
@@ -278,7 +280,7 @@ export function buildTicketFormState(
     seat: "",
     gate: "",
     terminal: "",
-    baggage: "20KG KÝ GỬI",
+    baggage: flight.checked_baggage?.trim() || "20KG KÝ GỬI",
     meal: "Không",
     seq: "",
     ticketStatus:
