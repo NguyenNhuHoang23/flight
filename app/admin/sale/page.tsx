@@ -14,42 +14,7 @@ interface AirlineSaleConfig {
   code: string;
   discountPercent: number;
   isCustom: boolean;
-}
-
-// ======================================================
-// DATA API TRẢ VỀ
-// ======================================================
-
-interface AirlineDiscountApiItem {
-  id: number;
-  airline_code: string;
-  airline_name: string;
-  discount_rate: number;
-  is_custom_enabled: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface AirlineDiscountResponse {
-  success: boolean;
-  data: {
-    default_discount_rate: number;
-    airlines: AirlineDiscountApiItem[];
-  };
-  message?: string;
-}
-
-interface AirlineSaleConfig {
-  id: string;
-  name: string;
-  code: string;
-  discountPercent: number;
-  isCustom: boolean;
-}
-
-interface AirlineDiscountResult {
-  defaultDiscount: number;
-  airlines: AirlineSaleConfig[];
+  note: string;
 }
 
 // ======================================================
@@ -72,12 +37,7 @@ export default function AdminAirlineSalePage() {
   useEffect(() => {
     if (!result) return;
 
-    console.log("🚀 ~ AdminAirlineSalePage ~ result:", result);
-
-    // Default
     setDefaultDiscount(Number(result.defaultDiscount ?? 0));
-
-    // Danh sách hãng bay
     setAirlines(Array.isArray(result.airlines) ? result.airlines : []);
   }, [result]);
 
@@ -92,6 +52,23 @@ export default function AdminAirlineSalePage() {
           ? {
               ...item,
               discountPercent: value,
+            }
+          : item,
+      ),
+    );
+  };
+
+  // ======================================================
+  // THAY ĐỔI NOTE
+  // ======================================================
+
+  const handleNoteChange = (id: string, value: string) => {
+    setAirlines((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              note: value,
             }
           : item,
       ),
@@ -173,18 +150,18 @@ export default function AdminAirlineSalePage() {
             airline_name: airline.name,
             discount_rate: airline.discountPercent,
             is_custom_enabled: airline.isCustom,
+            note: airline.note || "",
           })),
         }),
       });
 
       const result = await response.json();
 
-      console.log("SAVE RESULT:", result);
-
       if (!response.ok || !result.success) {
         throw new Error(result?.message || "Không thể lưu cấu hình");
       }
 
+      await refetch();
       alert("Đã lưu cấu hình phần trăm giảm giá theo hãng bay thành công!");
     } catch (error) {
       console.error("Save airline discounts error:", error);
@@ -340,6 +317,8 @@ export default function AdminAirlineSalePage() {
 
                   <th className="py-3 px-6 w-48 text-center">% ĐIỀU CHỈNH</th>
 
+                  <th className="py-3 px-6 min-w-[220px]">NOTE</th>
+
                   <th className="py-3 px-6 w-36 text-center">BẬT RIÊNG</th>
                 </tr>
               </thead>
@@ -393,6 +372,20 @@ export default function AdminAirlineSalePage() {
                       </div>
                     </td>
 
+                    {/* NOTE */}
+
+                    <td className="py-3.5 px-6">
+                      <input
+                        type="text"
+                        value={airline.note || ""}
+                        onChange={(e) =>
+                          handleNoteChange(airline.id, e.target.value)
+                        }
+                        placeholder="Ghi chú..."
+                        className="w-full min-w-[180px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                      />
+                    </td>
+
                     {/* BẬT RIÊNG */}
 
                     <td className="py-3.5 px-6 text-center">
@@ -413,7 +406,7 @@ export default function AdminAirlineSalePage() {
                 {airlines.length === 0 && (
                   <tr>
                     <td
-                      colSpan={3}
+                      colSpan={4}
                       className="text-center py-8 text-slate-400 text-sm"
                     >
                       Chưa có cấu hình hãng bay.

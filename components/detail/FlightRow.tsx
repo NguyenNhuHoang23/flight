@@ -30,6 +30,7 @@ interface Props {
   // DISCOUNT
   // ==============================
   discountPercent?: number;
+  discountNote?: string;
 
   calculateDiscountedPrice?: (
     originalPrice: number,
@@ -50,6 +51,7 @@ export const FlightRow: React.FC<Props> = ({
   // NHẬN DISCOUNT TỪ FLIGHTLIST
   // ==============================
   discountPercent = 0,
+  discountNote = "",
   calculateDiscountedPrice,
 }) => {
   const fares = airOption.ListFareOption || [];
@@ -255,11 +257,11 @@ export const FlightRow: React.FC<Props> = ({
             </span>
           </div>
 
-          {discountPercent > 0 && (
+          {discountNote ? (
             <span className="text-[8px] sm:text-[10px] text-green-600 block mt-0.5 font-bold">
-              Đang có voucher giảm giá
+              {discountNote}
             </span>
-          )}
+          ) : null}
 
           <span className="text-[8px] sm:text-[10px] text-slate-400 block mt-0.5 font-normal">
             {totalPaxCount > 1

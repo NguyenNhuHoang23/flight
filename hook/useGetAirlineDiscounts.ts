@@ -10,6 +10,7 @@ export interface AirlineDiscountApiItem {
   airline_name: string;
   discount_rate: number;
   is_custom_enabled: boolean;
+  note?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,6 +34,7 @@ export interface AirlineSaleConfig {
   code: string;
   discountPercent: number;
   isCustom: boolean;
+  note: string;
 }
 
 // ======================================================
@@ -90,6 +92,7 @@ export function useGetAirlineDiscounts() {
       code: airline.airline_code,
       discountPercent: Number(airline.discount_rate ?? 0),
       isCustom: Boolean(airline.is_custom_enabled),
+      note: airline.note ?? "",
     }),
   );
 

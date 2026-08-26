@@ -44,9 +44,9 @@ export default function ClientLayoutProvider({
     );
   }
 
-  const PHONE_NUMBER = info?.phone || "0123456789";
-  const ZALO_URL = info?.zalo || "https://zalo.me/0123456789";
-  const FB_URL = info?.fanpage || "https://m.me/yourpage";
+  const PHONE_NUMBER = info?.phone;
+  const ZALO_URL = info?.zalo;
+  const FB_URL = info?.fanpage;
 
   return (
     <ReactQueryProvider>
@@ -59,6 +59,7 @@ export default function ClientLayoutProvider({
         <Fooder />
 
         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+          {ZALO_URL && (
           <a
             href={ZALO_URL}
             target="_blank"
@@ -71,7 +72,8 @@ export default function ClientLayoutProvider({
             </span>
             <span className="font-bold text-xs tracking-tighter">Zalo</span>
           </a>
-
+          )}
+          {FB_URL && (
           <a
             href={FB_URL}
             target="_blank"
@@ -84,7 +86,8 @@ export default function ClientLayoutProvider({
             </span>
             <span className="font-bold text-sm tracking-tighter">FB</span>
           </a>
-
+          )}
+          {PHONE_NUMBER && (
           <button
             type="button"
             onClick={() => setIsPhoneModalOpen(true)}
@@ -96,6 +99,7 @@ export default function ClientLayoutProvider({
             </span>
             <PhoneCall className="w-5 h-5" />
           </button>
+          )}
         </div>
 
         {isPhoneModalOpen && (

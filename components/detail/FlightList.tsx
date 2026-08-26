@@ -39,31 +39,28 @@ export const FlightList: React.FC<Props> = ({
   }
 
   /**
-   * Lấy discount theo hãng của chuyến bay
+   * Lấy discount + note theo hãng của chuyến bay
    */
-  const getAirlineDiscount = (airOption: AirOptionAPI): number => {
+  const getAirlineDiscountInfo = (
+    airOption: AirOptionAPI,
+  ): { discountPercent: number; note: string } => {
     const flight = airOption.ListFlightOption?.[0]?.ListFlight?.[0];
 
     if (!airlineDiscounts) {
-      return 0;
+      return { discountPercent: 0, note: "" };
     }
-
-    // =========================================================
-    // LẤY MÃ HÃNG TỪ DATACOM
-    // =========================================================
 
     const airlineCode =
       airOption.Airline || flight?.AirlineCode || flight?.Airline;
 
     if (!airlineCode) {
-      return Number(airlineDiscounts.defaultDiscount) || 0;
+      return {
+        discountPercent: Number(airlineDiscounts.defaultDiscount) || 0,
+        note: "",
+      };
     }
 
     const dataComCode = airlineCode.trim().toUpperCase();
-
-    // =========================================================
-    // MAP MÃ DATACOM → MÃ TRONG BẢNG DISCOUNT
-    // =========================================================
 
     const airlineCodeMap: Record<string, string> = {
       VN: "VNA",
@@ -75,43 +72,21 @@ export const FlightList: React.FC<Props> = ({
 
     const discountCode = airlineCodeMap[dataComCode] || dataComCode;
 
-    // console.log("✈️ Airline mapping:", {
-    //   dataComCode,
-    //   discountCode,
-    // });
-
-    // =========================================================
-    // TÌM DISCOUNT
-    // =========================================================
-
     const airlineDiscount = airlineDiscounts.airlines?.find(
       (item) => item.code?.trim().toUpperCase() === discountCode,
     );
 
-    // =========================================================
-    // TÌM THẤY
-    // =========================================================
-
     if (airlineDiscount) {
-      console.log("💰 Airline discount:", {
-        dataComCode,
-        discountCode,
-        airlineName: airlineDiscount.name,
-        discount: airlineDiscount.discountPercent,
-      });
-
-      return Number(airlineDiscount.discountPercent) || 0;
+      return {
+        discountPercent: Number(airlineDiscount.discountPercent) || 0,
+        note: airlineDiscount.note?.trim() || "",
+      };
     }
 
-    // =========================================================
-    // KHÔNG TÌM THẤY → DEFAULT
-    // =========================================================
-
-    console.warn(
-      `⚠️ Không tìm thấy discount: ${discountCode} → dùng default: ${airlineDiscounts.defaultDiscount}`,
-    );
-
-    return Number(airlineDiscounts.defaultDiscount) || 0;
+    return {
+      discountPercent: Number(airlineDiscounts.defaultDiscount) || 0,
+      note: "",
+    };
   };
 
   /**
@@ -133,7 +108,7 @@ export const FlightList: React.FC<Props> = ({
   return (
     <div className="space-y-2.5 sm:space-y-3">
       {airOptions.map((airOption, idx) => {
-        const discountPercent = getAirlineDiscount(airOption);
+        const { discountPercent, note } = getAirlineDiscountInfo(airOption);
 
         return (
           <FlightRow
@@ -146,6 +121,7 @@ export const FlightList: React.FC<Props> = ({
             toggleExpand={toggleExpand}
             onSelectFlight={onSelectFlight}
             discountPercent={discountPercent}
+            discountNote={note}
             calculateDiscountedPrice={calculateDiscountedPrice}
             isSelected={
               selectedFlight?.ListFlightOption?.[0]?.ListFlight?.[0]

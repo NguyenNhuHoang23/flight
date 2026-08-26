@@ -6,6 +6,7 @@ interface AirlineSaleConfig {
   code: string;
   discountPercent: number;
   isCustom: boolean;
+  note: string;
 }
 
 interface SaveAirlineDiscountPayload {
@@ -51,6 +52,7 @@ export function useSaveAirlineDiscount() {
             airline_name: airline.name,
             discount_rate: airline.discountPercent,
             is_custom_enabled: airline.isCustom,
+            note: airline.note || "",
           })),
         }),
       });

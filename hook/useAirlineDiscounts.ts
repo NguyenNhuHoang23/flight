@@ -11,6 +11,7 @@ interface AirlineDiscountResponse {
       airline_code: string;
       discount_rate?: number;
       is_custom_enabled?: boolean;
+      note?: string | null;
     }>;
   };
 }
@@ -21,6 +22,7 @@ export interface AirlineSaleConfig {
   code: string;
   discountPercent: number;
   isCustom: boolean;
+  note: string;
 }
 
 export interface AirlineDiscountResult {
@@ -64,6 +66,7 @@ const fetchAirlineDiscounts = async (): Promise<AirlineDiscountResult> => {
       code: airline.airline_code,
       discountPercent: Number(airline.discount_rate ?? 0),
       isCustom: Boolean(airline.is_custom_enabled),
+      note: airline.note ?? "",
     }),
   );
 
