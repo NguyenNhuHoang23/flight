@@ -192,7 +192,7 @@ function mapOrder(order: ApiOrder): LookupOrder {
   };
 }
 
-async function lookupBooking(
+export async function lookupBooking(
   payload: LookupBookingPayload,
 ): Promise<LookupOrder> {
   const response = await fetch("/api/order/lookup", {

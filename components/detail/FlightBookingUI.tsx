@@ -9,6 +9,12 @@ import { FlightHeader } from "./FlightHeader";
 import { FlightList } from "./FlightList";
 import { FlightSidebar } from "./FlightSidebar";
 import { useAirlineDiscounts } from "@/hook/useAirlineDiscounts";
+import {
+  clearFlightSelection,
+  loadSelectedFlights,
+  saveSelectedDepartFlight,
+  saveSelectedReturnFlight,
+} from "./flight-selection-storage";
 export const FlightBookingHome: React.FC = () => {
   const params = useParams();
   const router = useRouter();
@@ -103,6 +109,9 @@ export const FlightBookingHome: React.FC = () => {
   const isRoundTrip = groups.length >= 2;
 
   useEffect(() => {
+    setSelectedDepartFlight(null);
+    setSelectedReturnFlight(null);
+
     const storageKey = rawId
       ? `flight_search_${rawId}`
       : "flight_search_result";
@@ -123,12 +132,11 @@ export const FlightBookingHome: React.FC = () => {
       }
     }
 
-    // ĐỌC LẠI CHUYẾN BAY ĐÃ CHỌN TỪ SESSION STORAGE (NẾU CÓ Quay LẠI ĐẶT LẠI)
+    // Chỉ khôi phục chuyến bay đã chọn nếu thuộc cùng phiên tìm kiếm
     try {
-      const savedDepart = sessionStorage.getItem("selected_depart_flight");
-      const savedReturn = sessionStorage.getItem("selected_return_flight");
-      if (savedDepart) setSelectedDepartFlight(JSON.parse(savedDepart));
-      if (savedReturn) setSelectedReturnFlight(JSON.parse(savedReturn));
+      const { depart, returnFlight } = loadSelectedFlights(rawId);
+      if (depart) setSelectedDepartFlight(depart);
+      if (returnFlight) setSelectedReturnFlight(returnFlight);
     } catch (e) {
       console.error("Lỗi đọc thông tin chuyến bay đã chọn:", e);
     }
@@ -198,8 +206,7 @@ export const FlightBookingHome: React.FC = () => {
     // Khi đổi ngày tìm kiếm, reset chuyến bay đã chọn
     setSelectedDepartFlight(null);
     setSelectedReturnFlight(null);
-    sessionStorage.removeItem("selected_depart_flight");
-    sessionStorage.removeItem("selected_return_flight");
+    clearFlightSelection();
 
     const payload = {
       Adt: currentDepartGroup.Adt || 1,
@@ -297,11 +304,9 @@ export const FlightBookingHome: React.FC = () => {
     searchRoundTrip(currentDepartDate, selected);
   };
 
-  // CHỌN CHUYẾN BAY VÀ XỬ LÝ LƯU SESSION STORAGE CỐ ĐỊNH 1 KEY
   const handleSelectFlight = (flight: any, direction: "depart" | "return") => {
     if (!isRoundTrip) {
-      // Một chiều: Ghi đè duy nhất vào 'selected_depart_flight'
-      sessionStorage.setItem("selected_depart_flight", JSON.stringify(flight));
+      saveSelectedDepartFlight(rawId, flight);
       sessionStorage.removeItem("selected_return_flight");
       router.push("/flight/passenger");
       return;
@@ -309,30 +314,22 @@ export const FlightBookingHome: React.FC = () => {
 
     if (direction === "depart") {
       setSelectedDepartFlight(flight);
-      // Ghi đè vào duy nhất key 'selected_depart_flight'
-      sessionStorage.setItem("selected_depart_flight", JSON.stringify(flight));
+      saveSelectedDepartFlight(rawId, flight);
 
-      // Kiểm tra nếu chuyến về đã có sẵn (từ State hoặc Session)
       const currentReturn =
         selectedReturnFlight ||
-        (sessionStorage.getItem("selected_return_flight")
-          ? JSON.parse(sessionStorage.getItem("selected_return_flight")!)
-          : null);
+        loadSelectedFlights(rawId).returnFlight;
 
       if (currentReturn) {
         router.push("/flight/passenger");
       }
     } else {
       setSelectedReturnFlight(flight);
-      // Ghi đè vào duy nhất key 'selected_return_flight'
-      sessionStorage.setItem("selected_return_flight", JSON.stringify(flight));
+      saveSelectedReturnFlight(rawId, flight);
 
-      // Kiểm tra nếu chuyến đi đã có sẵn (từ State hoặc Session)
       const currentDepart =
         selectedDepartFlight ||
-        (sessionStorage.getItem("selected_depart_flight")
-          ? JSON.parse(sessionStorage.getItem("selected_depart_flight")!)
-          : null);
+        loadSelectedFlights(rawId).depart;
 
       if (currentDepart) {
         router.push("/flight/passenger");

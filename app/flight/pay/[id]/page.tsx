@@ -17,6 +17,15 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useBankAccounts } from "@/hook/useBankAccounts";
 import { useUpdateOrderBill } from "@/hook/useCreateOrder";
 import PointingArrows from "@/components/admin/payment/PointingArrows";
+import BookingResultModal from "@/components/flight/BookingResultModal";
+import { readStoredJSON } from "@/components/admin/payment/payment-utils";
+import type { StoredContactInfo } from "@/components/admin/payment/payment-types";
+import {
+  buildLookupOrderFromFlights,
+  buildLookupOrderFromSession,
+} from "@/components/booking/buildLookupOrderFromSession";
+import { lookupBooking } from "@/hook/useLookupBooking";
+import type { LookupOrder } from "@/hook/useLookupBooking";
 
 // Định nghĩa kiểu dữ liệu cho chuyến bay hiển thị UI
 interface FlightDetail {
@@ -207,6 +216,8 @@ function PaymentContent() {
   const [billFile, setBillFile] = useState<File | null>(null);
   const [billPreview, setBillPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [lookupOrder, setLookupOrder] = useState<LookupOrder | null>(null);
   const [flights, setFlights] = useState<FlightDetail[]>(DEFAULT_FLIGHTS);
   const { accounts } = useBankAccounts();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -304,6 +315,45 @@ function PaymentContent() {
     }
   };
 
+  const resolveLookupOrder = async (): Promise<LookupOrder | null> => {
+    const storedContact = readStoredJSON<StoredContactInfo>(
+      "booking_contact_info",
+    );
+    const contactName =
+      storedContact?.full_name || order.passengers || order.code;
+
+    try {
+      return await lookupBooking({
+        orderCode: order.code,
+        contactName,
+      });
+    } catch {
+      const fromSession = buildLookupOrderFromSession({
+        orderCode: order.code,
+        amount: order.amount,
+        status: "paid",
+      });
+
+      if (fromSession) {
+        return fromSession;
+      }
+
+      if (flights.length) {
+        return buildLookupOrderFromFlights({
+          orderCode: order.code,
+          amount: order.amount,
+          status: "paid",
+          contactName,
+          contactPhone: storedContact?.phone || "",
+          passengersSummary: order.passengers,
+          flights,
+        });
+      }
+
+      return null;
+    }
+  };
+
   const handleGetTicket = async () => {
     if (!billFile) return;
 
@@ -315,10 +365,16 @@ function PaymentContent() {
         payment_bill_image: billFile,
       });
 
-      const messengerUrl =
-        "https://web.facebook.com/profile.php?id=61578733392253";
+      const resolvedOrder = await resolveLookupOrder();
 
-      window.open(messengerUrl, "_blank", "noopener,noreferrer");
+      if (resolvedOrder) {
+        setLookupOrder(resolvedOrder);
+        setShowTicketModal(true);
+      } else {
+        alert(
+          "Đã gửi bill thành công nhưng chưa lấy được thông tin đặt vé. Vui lòng tra cứu lại sau.",
+        );
+      }
     } catch (error) {
       alert(
         error instanceof Error
@@ -334,6 +390,11 @@ function PaymentContent() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-0">
+      <BookingResultModal
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        order={lookupOrder}
+      />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
         {/* ================= LEFT ================= */}
         <section className="bg-white">

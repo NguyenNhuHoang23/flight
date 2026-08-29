@@ -7,6 +7,9 @@ import type {
   OrderDetail,
   OrderFlight,
 } from "@/hook/useGetOrderDetail";
+import type { StoredPassengerInfo } from "@/components/admin/payment/payment-types";
+import { buildFlightPayload } from "@/components/admin/payment/payment-utils";
+import type { StoredFlightSource } from "@/components/admin/payment/payment-types";
 
 const AIRPORT_CITIES: Record<string, string> = {
   SGN: "Hồ Chí Minh",
@@ -235,6 +238,62 @@ export function mapFlightToTicketView(
     seatClass: "Phổ thông",
     tripType: flight.trip_type,
     checkedBaggage: flight.checked_baggage?.trim() || null,
+  };
+}
+
+export function buildTicketFormStateFromStored(
+  flightRaw: StoredFlightSource | null,
+  tripType: "outbound" | "return",
+  passengers: StoredPassengerInfo[] | null,
+  contactName: string,
+  orderCode: string,
+): TicketFormState | null {
+  const flightPayload = buildFlightPayload(flightRaw, tripType);
+  if (!flightPayload) return null;
+
+  const departure = parseAirportValue(flightPayload.departure_airport);
+  const arrival = parseAirportValue(flightPayload.arrival_airport);
+
+  return {
+    pnr: orderCode,
+    passengers: passengers?.length
+      ? passengers.map((passenger) => ({
+          name: passenger.full_name,
+          dob: formatPassengerDob(passenger.date_of_birth),
+          seat: "",
+          gate: "",
+        }))
+      : [
+          {
+            name: contactName,
+            dob: "",
+            seat: "",
+            gate: "",
+          },
+        ],
+    flightNumber: flightPayload.flight_number,
+    departureCode: departure.code,
+    departureCity: departure.city,
+    arrivalCode: arrival.code,
+    arrivalCity: arrival.city,
+    departDate: formatFlightDateWithWeekday(flightPayload.departure_at),
+    departTime: formatFlightTime(flightPayload.departure_at),
+    arrivalTime: formatFlightTime(flightPayload.arrival_at),
+    mealQr: null,
+    flightDuration: calcFlightDuration(
+      flightPayload.departure_at,
+      flightPayload.arrival_at,
+    ),
+    cabinClass: "Phổ thông",
+    seat: "",
+    gate: "",
+    terminal: "",
+    baggage: flightPayload.checked_baggage?.trim() || "20KG KÝ GỬI",
+    meal: "Không",
+    seq: "",
+    ticketStatus: "CHỜ XÁC NHẬN",
+    ticketNumber: "",
+    invoiceNo: "",
   };
 }
 

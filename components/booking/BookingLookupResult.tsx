@@ -24,6 +24,7 @@ import {
 
 interface BookingLookupResultProps {
   order: LookupOrder;
+  className?: string;
 }
 
 function mapPassengerTitle(type: string) {
@@ -214,6 +215,7 @@ function FlightCard({
 
 export default function BookingLookupResult({
   order,
+  className = "",
 }: BookingLookupResultProps) {
   const primaryFlight = order.flights[0];
   const airlineMeta = getAirlineMeta(
@@ -225,7 +227,9 @@ export default function BookingLookupResult({
   );
 
   return (
-    <div className="mt-8 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md">
+    <div
+      className={`mt-8 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md ${className}`}
+    >
       {/* Header */}
       <div className={`border-b border-gray-100 ${airlineMeta.bg} px-4 py-4 sm:px-5`}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

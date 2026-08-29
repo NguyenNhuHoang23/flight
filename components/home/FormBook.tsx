@@ -15,6 +15,7 @@ import DatePicker, { registerLocale } from "react-datepicker";
 import { vi } from "date-fns/locale/vi";
 import "react-datepicker/dist/react-datepicker.css";
 import { useFlightSearch } from "@/hook/useFlightSearch";
+import { clearFlightSelection } from "@/components/detail/flight-selection-storage";
 
 registerLocale("vi", vi);
 
@@ -262,6 +263,7 @@ export default function FormBook() {
     if (res) {
       const sessionId = res.Session || res.SearchId || Date.now();
       if (typeof window !== "undefined") {
+        clearFlightSelection();
         sessionStorage.setItem(
           `flight_search_${sessionId}`,
           JSON.stringify(res),
