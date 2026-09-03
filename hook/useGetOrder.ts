@@ -263,13 +263,14 @@ export function useGetOrders(token: string | null) {
   const [from, setFrom] = useState<number | null>(null);
 
   const [to, setTo] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // ====================================================
   // GET ORDERS
   // ====================================================
 
   const fetchOrders = useCallback(
-    async (page = 1, limit = 3) => {
+    async (page = 1, limit = 3, keyword = searchTerm) => {
       try {
         setLoading(true);
 
@@ -279,20 +280,28 @@ export function useGetOrders(token: string | null) {
           throw new Error("Không tìm thấy token đăng nhập");
         }
 
-        const response = await fetch(
-          `/api/admin/order?page=${page}&per_page=${limit}`,
-          {
-            method: "GET",
+        const params = new URLSearchParams({
+          page: String(page),
+          per_page: String(limit),
+        });
 
-            headers: {
-              Accept: "application/json",
+        const trimmedKeyword = keyword.trim();
 
-              Authorization: `Bearer ${token}`,
-            },
+        if (trimmedKeyword) {
+          params.set("search", trimmedKeyword);
+        }
 
-            cache: "no-store",
+        const response = await fetch(`/api/admin/order?${params.toString()}`, {
+          method: "GET",
+
+          headers: {
+            Accept: "application/json",
+
+            Authorization: `Bearer ${token}`,
           },
-        );
+
+          cache: "no-store",
+        });
 
               if (response.status === 401) {
         localStorage.removeItem("admin-auth");
@@ -359,7 +368,7 @@ export function useGetOrders(token: string | null) {
         setLoading(false);
       }
     },
-    [token],
+    [token, searchTerm],
   );
 
   // ====================================================
@@ -381,7 +390,7 @@ export function useGetOrders(token: string | null) {
       return;
     }
 
-    await fetchOrders(page, perPage);
+    await fetchOrders(page, perPage, searchTerm);
   };
 
   // ====================================================
@@ -411,8 +420,16 @@ export function useGetOrders(token: string | null) {
   const changePerPage = async (value: number) => {
     setPerPage(value);
 
-    await fetchOrders(1, value);
+    await fetchOrders(1, value, searchTerm);
   };
+
+  const changeSearch = useCallback(
+    async (value: string) => {
+      setSearchTerm(value);
+      await fetchOrders(1, perPage, value);
+    },
+    [fetchOrders, perPage],
+  );
 
   // ====================================================
   // RETURN
@@ -425,7 +442,7 @@ export function useGetOrders(token: string | null) {
 
     error,
 
-    refetch: () => fetchOrders(currentPage, perPage),
+    refetch: () => fetchOrders(currentPage, perPage, searchTerm),
 
     // Pagination
     currentPage,
@@ -441,6 +458,8 @@ export function useGetOrders(token: string | null) {
     to,
 
     goToPage,
+    searchTerm,
+    setSearchTerm: changeSearch,
 
     nextPage,
 

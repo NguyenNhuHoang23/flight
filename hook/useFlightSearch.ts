@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Đĩnh nghĩa cấu trúc Payload theo chuẩn Datacom API
 export interface SearchFlightPayload {
@@ -44,6 +44,13 @@ export function useFlightSearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [flightData, setFlightData] = useState<any>(null);
+
+  // Browser back/forward cache giữ nguyên JS state — loading vẫn true sau khi đã rời trang.
+  useEffect(() => {
+    const handlePageShow = () => setLoading(false);
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   // Helper tách mã IATA từ tên (ví dụ: "Hà Nội (HAN)" => "HAN")
   const extractAirportCode = (locationStr: string): string => {
@@ -120,7 +127,6 @@ export function useFlightSearch() {
       }
 
       const data = await response.json();
-      console.log("DATACOM RESPONSE:", JSON.stringify(data, null, 2));
       setFlightData(data);
       return data;
     } catch (err: any) {

@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { PhoneCall, Copy, Check, X } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import Fooder from "@/components/layout/Fooder";
 import { toast, Toaster } from "sonner";
 import ReactQueryProvider from "./ReactQueryProvider";
@@ -21,6 +22,7 @@ export default function ClientLayoutProvider({
   const isAdminRoute = pathname?.startsWith("/admin");
   const { info } = useGetData();
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [isZaloModalOpen, setIsZaloModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopyPhone = async () => {
@@ -60,10 +62,9 @@ export default function ClientLayoutProvider({
 
         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
           {ZALO_URL && (
-          <a
-            href={ZALO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => setIsZaloModalOpen(true)}
             aria-label="Chat Zalo CSKH"
             className="relative flex items-center justify-center w-12 h-12 bg-[#0068FF] text-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200"
           >
@@ -71,7 +72,7 @@ export default function ClientLayoutProvider({
               CSKH
             </span>
             <span className="font-bold text-xs tracking-tighter">Zalo</span>
-          </a>
+          </button>
           )}
           {FB_URL && (
           <a
@@ -101,6 +102,47 @@ export default function ClientLayoutProvider({
           </button>
           )}
         </div>
+
+        {isZaloModalOpen && ZALO_URL && (
+          <div
+            className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setIsZaloModalOpen(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-xl bg-white shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b px-5 py-4">
+                <h2 className="text-base font-bold text-gray-800">
+                  Zalo CSKH
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsZaloModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Đóng"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 px-5 py-5 text-center">
+                <p className="text-sm text-gray-500">
+                  Quét mã QR bằng Zalo để chat với CSKH
+                </p>
+
+                <div className="mx-auto flex w-fit items-center justify-center rounded-xl border border-gray-200 bg-white p-4">
+                  <QRCodeSVG
+                    value={ZALO_URL}
+                    size={200}
+                    level="M"
+                    includeMargin={false}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {isPhoneModalOpen && (
           <div

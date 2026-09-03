@@ -172,7 +172,9 @@ export default function RefundCommandRow({
           THÔNG TIN NGÂN HÀNG
       ========================= */}
 
-      <RefundBankInfo command={command} onChange={onChange} />
+      <td className="py-2 px-0">
+        <RefundBankInfo command={command} onChange={onChange} />
+      </td>
 
       {/* =========================
           SỐ TIỀN

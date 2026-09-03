@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
   Calendar,
@@ -172,7 +171,6 @@ export default function FormBook() {
   const [chd, setChd] = useState(0);
   const [inf, setInf] = useState(0);
 
-  const router = useRouter();
   const { searchFlight, loading, error } = useFlightSearch();
 
   const [activeSelectType, setActiveSelectType] = useState<
@@ -260,17 +258,15 @@ export default function FormBook() {
       inf,
     });
 
-    if (res) {
-      const sessionId = res.Session || res.SearchId || Date.now();
-      if (typeof window !== "undefined") {
-        clearFlightSelection();
-        sessionStorage.setItem(
-          `flight_search_${sessionId}`,
-          JSON.stringify(res),
-        );
-      }
-      router.push(`/flight/search/${sessionId}`);
-    }
+    if (!res) return;
+
+    const sessionId = res.Session || res.SearchId || Date.now();
+    clearFlightSelection();
+    sessionStorage.setItem(
+      `flight_search_${sessionId}`,
+      JSON.stringify(res),
+    );
+    window.location.assign(`/flight/search/${sessionId}`);
   };
 
   // Logic lọc airport nâng cao

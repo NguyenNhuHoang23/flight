@@ -19,7 +19,10 @@ export default function RefundPage() {
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const user = useCustomerAuthStore((state) => state.user);
+  const maxBalance = Number(user?.balance ?? 0);
 
   const accessToken = useCustomerAuthStore((state) => state.accessToken);
 
@@ -91,9 +94,22 @@ export default function RefundPage() {
 
   const handleSubmitRefund = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
 
     if (!accessToken) {
       router.replace("/flight/refund/login?redirect=/flight/refund");
+      return;
+    }
+
+    const amountNum = Number(amount);
+
+    if (!amountNum || amountNum <= 0) {
+      setErrorMsg("Vui lòng nhập số tiền hợp lệ.");
+      return;
+    }
+
+    if (amountNum > maxBalance) {
+      setErrorMsg("Quý khách cần xử lý hoàn tiền lên ví để rút");
       return;
     }
 
@@ -111,7 +127,7 @@ export default function RefundPage() {
           bank_name: bankName,
           account_number: accountNumber,
           account_holder: accountHolder,
-          amount: Number(amount),
+          amount: amountNum,
         }),
       });
 
@@ -123,7 +139,7 @@ export default function RefundPage() {
 
       setIsSuccess(true);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Có lỗi xảy ra");
+      setErrorMsg(error instanceof Error ? error.message : "Có lỗi xảy ra");
     } finally {
       setIsSubmitting(false);
     }
@@ -167,9 +183,9 @@ export default function RefundPage() {
             Tài khoản: <b>{user?.userName}</b>
           </p>
 
-          <p className="text-sm text-red-500 cursor-pointer mt-1" onClick={() => {handleLogout()}}>
+          <p className="text-sm text-red-300 cursor-pointer mt-1" onClick={() => {handleLogout()}}>
             {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
-          </p>
+          </p>  
         </div>
 
         <div className="p-6">
@@ -186,13 +202,7 @@ export default function RefundPage() {
               </p>
 
               <button
-                onClick={() => {
-                  setIsSuccess(false);
-                  setAccountNumber("");
-                  setBankName("");
-                  setAccountHolder("");
-                  setAmount("");
-                }}
+                onClick={() => router.push("/")}
                 className="px-6 py-2 bg-[#006837] text-white rounded-md text-sm font-semibold"
               >
                 Gửi yêu cầu khác
@@ -298,28 +308,33 @@ export default function RefundPage() {
                   value={amount}
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, "");
-
                     setAmount(value);
+                    // Xóa lỗi khi người dùng sửa
+                    if (errorMsg) setErrorMsg(null);
                   }}
                   placeholder="Ví dụ: 1000000"
-                  className="
+                  className={`
     w-full px-3 py-2
-    border border-gray-300
-    rounded-md
+    border rounded-md
     text-base text-gray-900
     bg-white
     focus:outline-none
-    focus:border-[#006837]
-    focus:ring-2 focus:ring-[#006837]
-  "
+    ${
+      amount && Number(amount) > maxBalance && maxBalance > 0
+        ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+        : "border-gray-300 focus:border-[#006837] focus:ring-2 focus:ring-[#006837]"
+    }
+  `}
                 />
-
-                {amount && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    {amount} VNĐ
-                  </p>
-                )}
               </div>
+
+              {/* Error message */}
+              {errorMsg && (
+                <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-600">
+                  {errorMsg}
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSubmitting}

@@ -20,9 +20,19 @@ export async function GET(request: NextRequest) {
 
     const page = searchParams.get("page") || "1";
     const perPage = searchParams.get("per_page") || "15";
+    const search = searchParams.get("search")?.trim() || "";
+
+    const upstreamSearchParams = new URLSearchParams({
+      page,
+      per_page: perPage,
+    });
+
+    if (search) {
+      upstreamSearchParams.set("search", search);
+    }
 
     const response = await fetch(
-      `${API_URL}/api/admin/orders?page=${page}&per_page=${perPage}`,
+      `${API_URL}/api/admin/orders?${upstreamSearchParams.toString()}`,
       {
         method: "GET",
         headers: {

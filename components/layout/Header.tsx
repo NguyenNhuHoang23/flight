@@ -21,6 +21,7 @@ export default function Header() {
     pathname.startsWith("/flight/refund") &&
     !pathname.startsWith("/flight/refund/history");
   const isHistory = pathname.startsWith("/flight/refund/history");
+  const isTicketReceive = pathname.startsWith("/flight/ticket-receive");
   const isBlog = pathname.startsWith("/blog");
   const isManage = pathname.startsWith("/flight/manage");
 
@@ -58,6 +59,13 @@ export default function Header() {
 
           <Link href="/flight/refund" className={navLinkClass(isRefund)}>
             <span>HOÀN TIỀN</span>
+          </Link>
+
+          <Link
+            href="/flight/ticket-receive"
+            className={navLinkClass(isTicketReceive)}
+          >
+            <span>NHẬN VÉ</span>
           </Link>
 
           <Link

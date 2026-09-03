@@ -247,7 +247,7 @@ export default function PaymentInvoice({
 
           {/* ================= CHÚ Ý MÀU ĐỎ (GÓC DƯỚI TRÁI) ================= */}
           <div className="absolute left-8 -bottom-[55px] w-[280px]">
-            <p className="text-[9.5px] leading-[13px] italic font-bold text-red-500">
+            <p className="text-[11.5px] leading-[15px] italic font-bold text-red-500">
               Chú ý: Thanh toán tiền vé ghi đúng nội dung, ký tự chuyển khoản hệ
               thống cung cấp tránh xảy ra lỗi
             </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Order } from "./data";
@@ -28,12 +28,12 @@ export default function AdminOrderListPage() {
     total,
     from,
     to,
-
     goToPage,
+    setSearchTerm,
   } = useGetOrders(token);
 
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setLocalSearchTerm] = useState("");
 
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
@@ -44,21 +44,21 @@ export default function AdminOrderListPage() {
   // ==================================================
 
   const filteredOrders = useMemo(() => {
-    const keyword = searchTerm.toLowerCase().trim();
-
     return orders.filter((order) => {
       const matchesStatus =
         selectedStatus === "all" || order.status === selectedStatus;
 
-      const matchesSearch =
-        !keyword ||
-        order.id.toLowerCase().includes(keyword) ||
-        order.customerName.toLowerCase().includes(keyword) ||
-        order.customerPhone.includes(keyword);
-
-      return matchesStatus && matchesSearch;
+      return matchesStatus;
     });
-  }, [orders, selectedStatus, searchTerm]);
+  }, [orders, selectedStatus]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      void setSearchTerm(searchTerm);
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, setSearchTerm]);
 
   // ==================================================
   // PRINT TICKET
@@ -165,7 +165,7 @@ export default function AdminOrderListPage() {
       <OrderFilter
         searchTerm={searchTerm}
         selectedStatus={selectedStatus}
-        onSearchChange={setSearchTerm}
+        onSearchChange={setLocalSearchTerm}
         onStatusChange={setSelectedStatus}
       />
 

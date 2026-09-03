@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   X,
+  Ticket,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,6 +25,7 @@ const navItems = [
   { name: "Đơn hàng", href: "/admin/orders", icon: ShoppingBag },
   { name: "Khách hàng", href: "/admin/customers", icon: Users },
   { name: "Hoàn tiền", href: "/admin/refunds", icon: BarChart3 },
+  { name: "Nhận vé", href: "/admin/ticket-receives", icon: Ticket },
   { name: "Ngân hàng", href: "/admin/bank", icon: Settings },
   { name: "Thông tin", href: "/admin/info", icon: Settings },
   { name: "Giảm giá", href: "/admin/sale", icon: Settings },

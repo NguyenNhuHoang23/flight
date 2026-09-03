@@ -5,6 +5,15 @@ import { Plane, Ticket } from "lucide-react";
 
 import { FlightSummary as FlightSummaryData } from "./flight-booking-types";
 
+function formatDepartDate(value?: string) {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "");
+  if (digits.length >= 8) {
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  }
+  return value;
+}
+
 interface FlightSummaryProps {
   flight: FlightSummaryData;
   showBorder?: boolean;
@@ -51,7 +60,7 @@ export default function FlightSummary({
           <span className="text-slate-300">•</span>
 
           <span className="text-[11px] font-medium text-slate-500">
-            {flight.departDate}
+            {formatDepartDate(flight.departDate)}
           </span>
         </div>
 
