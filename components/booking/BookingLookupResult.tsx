@@ -25,6 +25,18 @@ import {
 interface BookingLookupResultProps {
   order: LookupOrder;
   className?: string;
+  footer?: React.ReactNode;
+  /** Chỉ dùng cho popup Nhận vé ở trang thanh toán */
+  payTicketPopup?: boolean;
+}
+
+function PayTicketStatusBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-bold text-[11px]">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+      Đã xác nhận
+    </span>
+  );
 }
 
 function mapPassengerTitle(type: string) {
@@ -86,9 +98,11 @@ function InfoCard({
 function PassengerCard({
   passenger,
   hasReturnFlight,
+  hideBaggage = false,
 }: {
   passenger: LookupPassenger;
   hasReturnFlight: boolean;
+  hideBaggage?: boolean;
 }) {
   const dob = formatPassengerDob(passenger.dateOfBirth);
 
@@ -105,21 +119,25 @@ function PassengerCard({
         {passenger.name}
       </p>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+      <div
+        className={`mt-2 grid gap-2 text-[11px] ${hideBaggage ? "grid-cols-1" : "grid-cols-2"}`}
+      >
         <div className="rounded-md bg-gray-50 px-2.5 py-1.5">
           <p className="text-gray-500">Ngày sinh</p>
           <p className="mt-0.5 font-medium text-gray-800">{dob || "—"}</p>
         </div>
-        <div className="rounded-md bg-gray-50 px-2.5 py-1.5">
-          <p className="text-gray-500">
-            {hasReturnFlight ? "Hành lý (đi/về)" : "Hành lý ký gửi"}
-          </p>
-          <p className="mt-0.5 font-medium text-gray-800">
-            {hasReturnFlight
-              ? `${passenger.departBaggage} / ${passenger.returnBaggage}`
-              : passenger.departBaggage}
-          </p>
-        </div>
+        {!hideBaggage ? (
+          <div className="rounded-md bg-gray-50 px-2.5 py-1.5">
+            <p className="text-gray-500">
+              {hasReturnFlight ? "Hành lý (đi/về)" : "Hành lý ký gửi"}
+            </p>
+            <p className="mt-0.5 font-medium text-gray-800">
+              {hasReturnFlight
+                ? `${passenger.departBaggage} / ${passenger.returnBaggage}`
+                : passenger.departBaggage}
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -128,9 +146,11 @@ function PassengerCard({
 function FlightCard({
   flight,
   index,
+  hideBaggage = false,
 }: {
   flight: LookupFlight;
   index: number;
+  hideBaggage?: boolean;
 }) {
   const flightAirlineMeta = getAirlineMeta(flight.airlineCode, flight.airline);
   const departure = formatAirportDisplay(flight.departure, flight.departureCity);
@@ -202,13 +222,15 @@ function FlightCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 border-t border-gray-100 px-3 py-2 text-[11px] text-gray-600">
-        <Luggage className="h-3.5 w-3.5 text-sky-600" />
-        <span className="font-medium text-gray-500">Hành lý ký gửi:</span>
-        <span className="font-semibold text-gray-800">
-          {flight.checkedBaggage}
-        </span>
-      </div>
+      {!hideBaggage ? (
+        <div className="flex items-center gap-1.5 border-t border-gray-100 px-3 py-2 text-[11px] text-gray-600">
+          <Luggage className="h-3.5 w-3.5 text-sky-600" />
+          <span className="font-medium text-gray-500">Hành lý ký gửi:</span>
+          <span className="font-semibold text-gray-800">
+            {flight.checkedBaggage}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -216,7 +238,15 @@ function FlightCard({
 export default function BookingLookupResult({
   order,
   className = "",
+  footer,
+  payTicketPopup = false,
 }: BookingLookupResultProps) {
+  const hideBaggage = payTicketPopup;
+  const statusBadge = payTicketPopup ? (
+    <PayTicketStatusBadge />
+  ) : (
+    <OrderStatusBadge status={order.status} />
+  );
   const primaryFlight = order.flights[0];
   const airlineMeta = getAirlineMeta(
     primaryFlight?.airlineCode,
@@ -255,7 +285,7 @@ export default function BookingLookupResult({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <OrderStatusBadge status={order.status} />
+            {statusBadge}
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-gray-700 ring-1 ring-black/5">
               <Plane className="h-3 w-3" />
               {primaryFlight?.airline || airlineMeta.name}
@@ -277,14 +307,18 @@ export default function BookingLookupResult({
             Thông tin đặt chỗ
           </h3>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${hideBaggage ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}
+          >
             <InfoCard label="Mã đặt chỗ" value={order.id} highlight />
             <InfoCard
               label="Hãng hàng không"
               value={primaryFlight?.airline || airlineMeta.name}
             />
-            <InfoCard label="Trạng thái" value={<OrderStatusBadge status={order.status} />} />
-            <InfoCard label="Hành lý ký gửi" value={order.baggage} />
+            <InfoCard label="Trạng thái" value={statusBadge} />
+            {!hideBaggage ? (
+              <InfoCard label="Hành lý ký gửi" value={order.baggage} />
+            ) : null}
           </div>
         </section>
 
@@ -304,6 +338,7 @@ export default function BookingLookupResult({
                 key={index}
                 passenger={passenger}
                 hasReturnFlight={hasReturnFlight}
+                hideBaggage={hideBaggage}
               />
             ))}
           </div>
@@ -315,7 +350,7 @@ export default function BookingLookupResult({
                   <th className="px-3 py-2 font-semibold">Quý danh</th>
                   <th className="px-3 py-2 font-semibold">Họ tên</th>
                   <th className="px-3 py-2 font-semibold">Ngày sinh</th>
-                  {hasReturnFlight ? (
+                  {!hideBaggage && hasReturnFlight ? (
                     <>
                       <th className="px-3 py-2 font-semibold">
                         <span className="inline-flex items-center gap-1">
@@ -330,14 +365,15 @@ export default function BookingLookupResult({
                         </span>
                       </th>
                     </>
-                  ) : (
+                  ) : null}
+                  {!hideBaggage && !hasReturnFlight ? (
                     <th className="px-3 py-2 font-semibold">
                       <span className="inline-flex items-center gap-1">
                         <Luggage className="h-3 w-3" />
                         Hành lý
                       </span>
                     </th>
-                  )}
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -355,7 +391,7 @@ export default function BookingLookupResult({
                     <td className="px-3 py-2 text-gray-700">
                       {formatPassengerDob(passenger.dateOfBirth) || "—"}
                     </td>
-                    {hasReturnFlight ? (
+                    {!hideBaggage && hasReturnFlight ? (
                       <>
                         <td className="px-3 py-2 font-medium text-gray-800">
                           {passenger.departBaggage}
@@ -364,11 +400,12 @@ export default function BookingLookupResult({
                           {passenger.returnBaggage}
                         </td>
                       </>
-                    ) : (
+                    ) : null}
+                    {!hideBaggage && !hasReturnFlight ? (
                       <td className="px-3 py-2 font-medium text-gray-800">
                         {passenger.departBaggage}
                       </td>
-                    )}
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -388,7 +425,12 @@ export default function BookingLookupResult({
 
           <div className="grid gap-3">
             {order.flights.map((flight, index) => (
-              <FlightCard key={index} flight={flight} index={index} />
+              <FlightCard
+                key={index}
+                flight={flight}
+                index={index}
+                hideBaggage={hideBaggage}
+              />
             ))}
           </div>
         </section>
@@ -421,6 +463,10 @@ export default function BookingLookupResult({
             </ul>
           </div>
         </section>
+
+        {footer ? (
+          <section className="border-t border-gray-100 pt-4">{footer}</section>
+        ) : null}
       </div>
     </div>
   );

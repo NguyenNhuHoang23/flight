@@ -331,7 +331,6 @@ function PaymentContent() {
       const fromSession = buildLookupOrderFromSession({
         orderCode: order.code,
         amount: order.amount,
-        status: "paid",
       });
 
       if (fromSession) {
@@ -342,7 +341,6 @@ function PaymentContent() {
         return buildLookupOrderFromFlights({
           orderCode: order.code,
           amount: order.amount,
-          status: "paid",
           contactName,
           contactPhone: storedContact?.phone || "",
           passengersSummary: order.passengers,

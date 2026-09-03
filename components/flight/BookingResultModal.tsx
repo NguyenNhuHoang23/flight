@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { X } from "lucide-react";
+import { MessageCircle, X } from "lucide-react";
 
 import BookingLookupResult from "@/components/booking/BookingLookupResult";
 import type { LookupOrder } from "@/hook/useLookupBooking";
+import { useGetData } from "@/context/GetContext";
 
 interface BookingResultModalProps {
   isOpen: boolean;
@@ -17,6 +18,18 @@ export default function BookingResultModal({
   onClose,
   order,
 }: BookingResultModalProps) {
+  const { info } = useGetData();
+  const messengerUrl = info?.messenger?.trim() || "";
+
+  const handleOpenMessenger = () => {
+    if (!messengerUrl) {
+      alert("Chưa cấu hình link Messenger CSKH. Vui lòng liên hệ qua hotline.");
+      return;
+    }
+
+    window.open(messengerUrl, "_blank", "noopener,noreferrer");
+  };
+
   if (!isOpen || !order) return null;
 
   return (
@@ -31,7 +44,21 @@ export default function BookingResultModal({
           <X className="h-5 w-5" />
         </button>
 
-        <BookingLookupResult order={order} className="mt-0 shadow-2xl" />
+        <BookingLookupResult
+          order={order}
+          className="mt-0 shadow-2xl"
+          payTicketPopup
+          footer={
+            <button
+              type="button"
+              onClick={handleOpenMessenger}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0084FF] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0073e6]"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Quý khách ấn vào CSKH để nhận vé điện tử
+            </button>
+          }
+        />
       </div>
     </div>
   );
