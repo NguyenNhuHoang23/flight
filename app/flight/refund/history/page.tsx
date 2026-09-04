@@ -85,18 +85,25 @@ function RefundStatusBadge({
 function TicketReceiveStatusBadge({
   status,
 }: {
-  status: "not_returned" | "returned";
+  status: "pending" | "sent" | "cancelled";
 }) {
-  if (status === "returned")
+  if (status === "sent")
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-700">
-        <CheckCircle2 size={12} /> Đã trả về
+        <CheckCircle2 size={12} /> Đã gửi
+      </span>
+    );
+
+  if (status === "cancelled")
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
+        <XCircle size={12} /> Đã hủy
       </span>
     );
 
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700">
-      <Clock size={12} /> Chưa trả
+      <Clock size={12} /> Chờ gửi
     </span>
   );
 }

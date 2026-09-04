@@ -82,4 +82,5 @@ export interface AirlineInfo {
   image: string;
   color: string;
   bg: string;
+  showName?: boolean;
 }

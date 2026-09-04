@@ -1,46 +1,69 @@
-// app/api/flight/search/route.ts
 import { NextResponse } from "next/server";
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return request.headers.get("x-real-ip") || "";
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const apiFlightUrl =
       process.env.API_FLIGHT ||
-      "https://ibe.datacom.vn/api/flight/searchflight";
+      "https://ibe.datacom.vn/api/Flight/SearchFlight";
 
-    // Bạn có thể giấu các thông tin bảo mật ở phía Server ở đây
+    const option = body.Option ?? {};
+
     const payload = {
       RequestInfo: {
-        PrivateKey: "M8jAubN75AXas2dfoOpx293Hg567sdLpB56iqc2CtTXgjVX8AQ",
-        ApiAccount: "DTC14938",
-        ApiPassword: "2MD0ExkdN6cP",
-        Currency: "VND",
-        Language: "vi",
+        PrivateKey:
+          process.env.DATACOM_PRIVATE_KEY ||
+          "M8jAubN75AXas2dfoOpx293Hg567sdLpB56iqc2CtTXgjVX8AQ",
+        ApiAccount: process.env.DATACOM_API_ACCOUNT || "DTC14938",
+        ApiPassword: process.env.DATACOM_API_PASSWORD || "2MD0ExkdN6cP",
+        Currency: process.env.DATACOM_CURRENCY || "VND",
+        Language: process.env.DATACOM_LANGUAGE || "vi",
+        IpAddress: getClientIp(request),
       },
-      ...body, // Nhận các tham số ListRoute, Adt, Chd, Inf từ Frontend
+      // Chuỗi rỗng = tìm tất cả hãng / hệ thống
+      System: "",
+      Adt: Number(body.Adt) || 1,
+      Chd: Number(body.Chd) || 0,
+      Inf: Number(body.Inf) || 0,
+      Tourcode: body.Tourcode ?? "",
+      ListRoute: body.ListRoute ?? [],
+      Option: {
+        DirectOnly: option.DirectOnly ?? false,
+        NearByAirport: option.NearByAirport ?? true,
+        PreferCabin: option.PreferCabin || "ECONOMY",
+        NdcOnly: option.NdcOnly ?? false,
+        CombineMode: option.CombineMode ?? "flight",
+      },
     };
 
     const response = await fetch(apiFlightUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify(payload),
     });
 
+    const data = await response.json().catch(() => null);
+
     if (!response.ok) {
       return NextResponse.json(
-        { error: `Datacom API Error: ${response.statusText}` },
+        data ?? { error: `Datacom API Error: ${response.statusText}` },
         { status: response.status },
       );
     }
 
-    const data = await response.json();
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 },
-    );
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Internal Server Error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

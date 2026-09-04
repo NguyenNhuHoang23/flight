@@ -2,8 +2,8 @@
 
 import Header from "@/components/layout/Header";
 import { usePathname } from "next/navigation";
-import React, { useState } from "react";
-import { PhoneCall, Copy, Check, X } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { PhoneCall, Copy, Check, X, Download } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import Fooder from "@/components/layout/Fooder";
 import { toast, Toaster } from "sonner";
@@ -12,6 +12,32 @@ import { useGetData } from "@/context/GetContext";
 
 interface ClientLayoutProviderProps {
   children: React.ReactNode;
+}
+
+type TaggedContactAction = {
+  mode: "qr" | "link";
+  url: string;
+};
+
+function parseTaggedContactUrl(
+  value?: string | null,
+): TaggedContactAction | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+
+  const hasQr = /\{qr\}/i.test(raw);
+  const hasLink = /\{link\}/i.test(raw);
+  const url = raw
+    .replace(/\{qr\}/gi, "")
+    .replace(/\{link\}/gi, "")
+    .trim();
+
+  if (!url) return null;
+
+  if (hasQr) return { mode: "qr", url };
+  if (hasLink) return { mode: "link", url };
+
+  return { mode: "qr", url };
 }
 
 export default function ClientLayoutProvider({
@@ -24,6 +50,70 @@ export default function ClientLayoutProvider({
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [isZaloModalOpen, setIsZaloModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isSavingQr, setIsSavingQr] = useState(false);
+  const zaloQrRef = useRef<HTMLDivElement>(null);
+
+  const handleSaveZaloQr = () => {
+    const svg = zaloQrRef.current?.querySelector("svg");
+    if (!svg) {
+      toast.error("Không thể lưu mã QR. Vui lòng thử lại.");
+      return;
+    }
+
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    const svgBlob = new Blob([svgString], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    setIsSavingQr(true);
+
+    const image = new Image();
+    image.onload = () => {
+      const padding = 16;
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width + padding * 2;
+      canvas.height = image.height + padding * 2;
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        setIsSavingQr(false);
+        toast.error("Không thể lưu mã QR. Vui lòng thử lại.");
+        return;
+      }
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, padding, padding);
+
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(url);
+        setIsSavingQr(false);
+
+        if (!blob) {
+          toast.error("Không thể lưu mã QR. Vui lòng thử lại.");
+          return;
+        }
+
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = "zalo-cskh-qr.png";
+        link.click();
+        URL.revokeObjectURL(downloadUrl);
+        toast.success("Đã lưu mã QR");
+      }, "image/png");
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      setIsSavingQr(false);
+      toast.error("Không thể lưu mã QR. Vui lòng thử lại.");
+    };
+    image.src = url;
+  };
 
   const handleCopyPhone = async () => {
     const phoneNumber = info?.phone || "0123456789";
@@ -47,8 +137,20 @@ export default function ClientLayoutProvider({
   }
 
   const PHONE_NUMBER = info?.phone;
-  const ZALO_URL = info?.zalo;
+  const zaloAction = parseTaggedContactUrl(info?.zalo);
+  const ZALO_URL = zaloAction?.url;
   const FB_URL = info?.fanpage;
+
+  const handleZaloClick = () => {
+    if (!zaloAction) return;
+
+    if (zaloAction.mode === "link") {
+      window.open(zaloAction.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    setIsZaloModalOpen(true);
+  };
 
   return (
     <ReactQueryProvider>
@@ -61,10 +163,10 @@ export default function ClientLayoutProvider({
         <Fooder />
 
         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
-          {ZALO_URL && (
+          {zaloAction && (
           <button
             type="button"
-            onClick={() => setIsZaloModalOpen(true)}
+            onClick={handleZaloClick}
             aria-label="Chat Zalo CSKH"
             className="relative flex items-center justify-center w-12 h-12 bg-[#0068FF] text-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200"
           >
@@ -103,7 +205,7 @@ export default function ClientLayoutProvider({
           )}
         </div>
 
-        {isZaloModalOpen && ZALO_URL && (
+        {isZaloModalOpen && zaloAction?.mode === "qr" && ZALO_URL && (
           <div
             className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4"
             onClick={() => setIsZaloModalOpen(false)}
@@ -128,10 +230,13 @@ export default function ClientLayoutProvider({
 
               <div className="space-y-4 px-5 py-5 text-center">
                 <p className="text-sm text-gray-500">
-                  Quét mã QR bằng Zalo để chat với CSKH
+                  Quét mã QR bằng Zalo hoặc Chụp lại QR
                 </p>
 
-                <div className="mx-auto flex w-fit items-center justify-center rounded-xl border border-gray-200 bg-white p-4">
+                <div
+                  ref={zaloQrRef}
+                  className="mx-auto flex w-fit items-center justify-center rounded-xl border border-gray-200 bg-white p-4"
+                >
                   <QRCodeSVG
                     value={ZALO_URL}
                     size={200}
@@ -139,6 +244,10 @@ export default function ClientLayoutProvider({
                     includeMargin={false}
                   />
                 </div>
+                <p className="text-sm text-gray-500">
+                  Chụp lại QR
+                </p>
+                
               </div>
             </div>
           </div>

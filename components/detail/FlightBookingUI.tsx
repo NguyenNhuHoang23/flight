@@ -209,6 +209,7 @@ export const FlightBookingHome: React.FC = () => {
     clearFlightSelection();
 
     const payload = {
+      System: "",
       Adt: currentDepartGroup.Adt || 1,
       Chd: currentDepartGroup.Chd || 0,
       Inf: currentDepartGroup.Inf || 0,
@@ -234,9 +235,9 @@ export const FlightBookingHome: React.FC = () => {
         },
       ],
       Option: {
-        DirectOnly: true,
-        NearByAirport: false,
-        PreferCabin: "economy",
+        DirectOnly: false,
+        NearByAirport: true,
+        PreferCabin: "ECONOMY",
         NdcOnly: false,
         CombineMode: "flight",
       },

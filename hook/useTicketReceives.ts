@@ -2,7 +2,33 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-export type TicketReceiveStatus = "not_returned" | "returned";
+export type TicketReceiveStatus = "pending" | "sent" | "cancelled";
+
+export const TICKET_RECEIVE_STATUS_OPTIONS: {
+  value: TicketReceiveStatus;
+  label: string;
+}[] = [
+  { value: "pending", label: "Chờ gửi" },
+  { value: "sent", label: "Đã gửi" },
+  { value: "cancelled", label: "Đã hủy" },
+];
+
+export function ticketReceiveStatusLabel(
+  status: TicketReceiveStatus | string,
+): string {
+  const option = TICKET_RECEIVE_STATUS_OPTIONS.find(
+    (o) => o.value === normalizeTicketReceiveStatus(status),
+  );
+  return option?.label ?? "Chờ gửi";
+}
+
+export function normalizeTicketReceiveStatus(
+  status: string | null | undefined,
+): TicketReceiveStatus {
+  if (status === "sent" || status === "returned") return "sent";
+  if (status === "cancelled" || status === "canceled") return "cancelled";
+  return "pending";
+}
 
 export interface TicketReceive {
   id: number;
@@ -76,7 +102,15 @@ async function fetchTicketReceives(
     throw new Error(data.message || "Không thể lấy danh sách nhận vé");
   }
 
-  return data;
+  return {
+    ...data,
+    data: Array.isArray(data.data)
+      ? data.data.map((item: TicketReceive) => ({
+          ...item,
+          status: normalizeTicketReceiveStatus(item.status),
+        }))
+      : [],
+  };
 }
 
 export function useTicketReceives(

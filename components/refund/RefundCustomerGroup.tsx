@@ -3,6 +3,7 @@
 import React from "react";
 
 import { CustomerGroup, RefundCommand } from "./refund-types";
+import { formatVndAmount } from "@/lib/refund-balance";
 
 import RefundCommandRow from "./RefundCommandRow";
 
@@ -94,6 +95,21 @@ export default function RefundCustomerGroup({
           >
             Khách hàng: {group.username}
           </span>
+        </div>
+
+        <div className="text-right text-xs text-slate-600">
+          <div>
+            Số dư ví:{" "}
+            <b className="text-slate-900">
+              {formatVndAmount(group.balance)} ₫
+            </b>
+          </div>
+          <div>
+            Có thể tạo thêm:{" "}
+            <b className="text-emerald-700">
+              {formatVndAmount(group.availableBalance)} ₫
+            </b>
+          </div>
         </div>
       </div>
 

@@ -4,14 +4,20 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
+  Clock,
   History,
   Info,
   Loader2,
   Send,
   Ticket,
+  XCircle,
 } from "lucide-react";
 
 import { useCustomerAuthStore } from "@/store/customer-auth-store";
+import {
+  useClientTicketReceives,
+  TicketReceiveClientStatus,
+} from "@/hook/useTicketReceivesClient";
 
 export default function TicketReceivePage() {
   const router = useRouter();
@@ -26,6 +32,13 @@ export default function TicketReceivePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const { data: historyData, refetch: refetchHistory } = useClientTicketReceives(
+    accessToken ?? "",
+    1,
+    5,
+  );
+  const recentRequests = historyData?.data ?? [];
 
   // ─── Auth guard ───────────────────────────────────────────
   useEffect(() => {
@@ -83,6 +96,7 @@ export default function TicketReceivePage() {
       }
 
       setIsSuccess(true);
+      refetchHistory();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Có lỗi xảy ra");
     } finally {
@@ -150,7 +164,7 @@ export default function TicketReceivePage() {
                   onClick={() => router.push("/")}
                   className="px-5 py-2 bg-[#006837] text-white rounded-lg text-sm font-semibold hover:bg-[#004d28] transition"
                 >
-                  Gửi yêu cầu khác
+                  Về trang chủ
                 </button>
               </div>
             </div>
@@ -229,6 +243,6 @@ export default function TicketReceivePage() {
           )}
         </div>
       </div>
-    </main> 
+    </main>
   );
 }

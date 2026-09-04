@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Check, Info, Luggage, Utensils } from "lucide-react";
 
 import { AirOptionAPI, ApiRootResponse } from "./flight-types";
-import { AIRLINE_INFO, formatPrice, parseTime } from "./flight-utils";
+import { formatPrice, getAirlineMeta, parseTime } from "./flight-utils";
 import { FlightDetail } from "./FlightDetail";
 
 interface Props {
@@ -63,14 +63,7 @@ export const FlightRow: React.FC<Props> = ({
 
   const airlineCode = airOption.Airline;
 
-  const airlineMeta = AIRLINE_INFO[
-    airlineCode as keyof typeof AIRLINE_INFO
-  ] || {
-    name: airlineCode,
-    image: "/images/airlines/default.png",
-    color: "text-slate-800",
-    bg: "bg-slate-100",
-  };
+  const airlineMeta = getAirlineMeta(airlineCode);
 
   const rawFlightNum =
     flightData?.FlightNumber || segmentData?.FlightNumber || "---";
@@ -88,10 +81,17 @@ export const FlightRow: React.FC<Props> = ({
   const equipmentCode = segmentData?.Equipment || "A321";
 
   const isWideBody =
-    equipmentCode.includes("787") || equipmentCode.includes("350");
+    equipmentCode.startsWith("777") ||
+    equipmentCode.startsWith("330") ||
+    equipmentCode.startsWith("350") ||
+    equipmentCode.startsWith("787") ||
+    equipmentCode.startsWith("747") ||
+    equipmentCode.includes("787") ||
+    equipmentCode.includes("350");
 
   const hasBaggage = airlineCode !== "VJ";
-  const hasMeal = airlineCode === "VN" || airlineCode === "9G";
+  const hasMeal =
+    airlineCode === "VN" || airlineCode === "9G" || airlineCode === "BL";
 
   const listFarePax = cheapestFare?.ListFarePax || [];
   const totalPaxCount = listFarePax.reduce((sum, pax) => sum + pax.PaxNumb, 0);
@@ -222,17 +222,27 @@ export const FlightRow: React.FC<Props> = ({
         <div className="flex items-center gap-2 min-w-0">
           <Image
             src={airlineMeta.image}
-            alt={airlineCode}
+            alt={airlineMeta.name}
             width={48}
             height={24}
-            className="max-h-5 sm:max-h-6 w-auto object-contain"
+            className="max-h-5 sm:max-h-6 w-auto object-contain shrink-0"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
           />
 
-          <div className="hidden sm:block min-w-0">
-            <span className="font-bold text-slate-800 text-xs sm:text-sm block truncate">
+          <div className="min-w-0">
+            {airlineMeta.showName ? (
+              <span className="text-[10px] sm:text-xs font-bold text-slate-800 block truncate leading-tight">
+                {airlineMeta.name}
+              </span>
+            ) : null}
+
+            <span
+              className={`font-bold text-slate-800 text-xs sm:text-sm block truncate ${
+                airlineMeta.showName ? "" : "hidden sm:block"
+              }`}
+            >
               {flightNumber}
             </span>
 

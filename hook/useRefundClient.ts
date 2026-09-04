@@ -41,7 +41,7 @@ interface RefundResponse {
   pagination: RefundPagination;
 }
 
-const fetchClientRefunds = async (
+export const fetchClientRefunds = async (
   token: string,
   page: number,
   perPage: number

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Customer, CustomerFormData } from "./customer-types";
+import { formatVndAmount } from "@/lib/refund-balance";
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export default function CustomerModal({
   const formatMoney = (value: string | number) => {
     if (!value) return "";
 
-    return Number(value).toLocaleString("vi-VN") + " ₫";
+    return formatVndAmount(value) + " ₫";
   };
 
   const inputClassName =

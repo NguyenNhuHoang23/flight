@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Customer } from "./customer-types";
+import { formatVndAmount } from "@/lib/refund-balance";
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -20,10 +21,6 @@ export default function CustomerTable({
   onEdit,
   onDelete,
 }: CustomerTableProps) {
-  console.log("🚀 ~ CustomerTable ~ customers:", customers)
-  const formatMoney = (value: string | number | null) => {
-    return Number(value || 0).toLocaleString("vi-VN") + " ₫";
-  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -77,7 +74,7 @@ export default function CustomerTable({
 
                   {/* BALANCE */}
                   <td className="px-6 py-4 font-semibold text-green-600">
-                    {formatMoney(item.balance)}
+                    {formatVndAmount(item.balance)} ₫
                   </td>
 
                   {/* ROLE */}

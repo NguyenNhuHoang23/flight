@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Info, Loader2, Send } from "lucide-react";
 
 import { useCustomerAuthStore } from "@/store/customer-auth-store";
-import { useAuthStoreClient } from "@/store/auth-client-store";
+import { useRefundAvailability } from "@/hook/useRefundAvailability";
+import {
+  fetchCurrentCustomerAccount,
+  getCustomerUsername,
+} from "@/lib/customer-account";
+import { formatVndAmount, parseVndAmount } from "@/lib/refund-balance";
 
 export default function RefundPage() {
   const router = useRouter();
-
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const [accountNumber, setAccountNumber] = useState("");
   const [bankName, setBankName] = useState("");
@@ -22,14 +25,36 @@ export default function RefundPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const user = useCustomerAuthStore((state) => state.user);
-  const maxBalance = Number(user?.balance ?? 0);
-
+  const updateUser = useCustomerAuthStore((state) => state.updateUser);
   const accessToken = useCustomerAuthStore((state) => state.accessToken);
+  const [isRefreshingAccount, setIsRefreshingAccount] = useState(true);
+
+  const walletBalance = parseVndAmount(user?.balance);
+  const accountName = getCustomerUsername(user);
+  const {
+    available: availableBalance,
+    pendingTotal,
+    isLoading: isLoadingAvailability,
+    refetch: refetchAvailability,
+  } = useRefundAvailability(accessToken, walletBalance);
+  const maxBalance = availableBalance;
 
   const hydrated = useCustomerAuthStore((state) => state.hydrated);
   const logout = useCustomerAuthStore((state) => state.logout);
   
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const refreshAccount = useCallback(async () => {
+    if (!accessToken) return null;
+
+    const account = await fetchCurrentCustomerAccount(accessToken);
+
+    if (account) {
+      updateUser(account);
+    }
+
+    return account;
+  }, [accessToken, updateUser]);
   const handleLogout = async () => {
     if (loggingOut) return;
 
@@ -69,9 +94,6 @@ export default function RefundPage() {
     }
   };
 
-  console.log("hydrated:", hydrated);
-  console.log("user:", user);
-  console.log("token:", accessToken);
 
   useEffect(() => {
     // Zustand chưa hydrate => chưa được phép kiểm tra auth
@@ -92,6 +114,27 @@ export default function RefundPage() {
     }
   }, [hydrated, user, accessToken, router]);
 
+  useEffect(() => {
+    if (!hydrated || !accessToken || !user?.id || user.role !== "customer") {
+      return;
+    }
+
+    let cancelled = false;
+    setIsRefreshingAccount(true);
+
+    refreshAccount()
+      .catch((error) => {
+        console.error("Không thể cập nhật số dư tài khoản:", error);
+      })
+      .finally(() => {
+        if (!cancelled) setIsRefreshingAccount(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, accessToken, user?.id, user?.role, refreshAccount]);
+
   const handleSubmitRefund = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -109,7 +152,11 @@ export default function RefundPage() {
     }
 
     if (amountNum > maxBalance) {
-      setErrorMsg("Quý khách cần xử lý hoàn tiền lên ví để rút");
+      setErrorMsg(
+        maxBalance <= 0
+          ? "Số dư khả dụng không đủ để tạo lệnh hoàn tiền."
+          : `Quý khách cần xử lý hoàn tiền lên số dư ví.`,
+      );
       return;
     }
 
@@ -137,6 +184,7 @@ export default function RefundPage() {
         throw new Error(data.message || "Gửi yêu cầu hoàn tiền thất bại");
       }
 
+      await Promise.all([refetchAvailability(), refreshAccount()]);
       setIsSuccess(true);
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : "Có lỗi xảy ra");
@@ -205,19 +253,11 @@ export default function RefundPage() {
                 onClick={() => router.push("/")}
                 className="px-6 py-2 bg-[#006837] text-white rounded-md text-sm font-semibold"
               >
-                Gửi yêu cầu khác
+                Về trang chủ
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmitRefund} className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex gap-2 text-xs text-amber-800">
-                <Info className="w-4 h-4 text-amber-600 shrink-0" />
-
-                <span>
-                  Vui lòng điền chính xác thông tin ngân hàng nhận tiền và số
-                  tiền muốn rút.
-                </span>
-              </div>
 
               {/* Bank */}
               <div>
@@ -313,6 +353,7 @@ export default function RefundPage() {
                     if (errorMsg) setErrorMsg(null);
                   }}
                   placeholder="Ví dụ: 1000000"
+                  disabled={isLoadingAvailability || isRefreshingAccount}
                   className={`
     w-full px-3 py-2
     border rounded-md
@@ -324,7 +365,7 @@ export default function RefundPage() {
         ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200"
         : "border-gray-300 focus:border-[#006837] focus:ring-2 focus:ring-[#006837]"
     }
-  `}
+                  `}
                 />
               </div>
 
@@ -337,7 +378,12 @@ export default function RefundPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  isLoadingAvailability ||
+                  isRefreshingAccount ||
+                  maxBalance <= 0
+                }
                 className="w-full h-11 bg-[#006837] text-white font-bold rounded-md flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {isSubmitting ? (

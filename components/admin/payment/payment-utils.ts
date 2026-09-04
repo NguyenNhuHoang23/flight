@@ -29,6 +29,8 @@ export const AIRLINE_NAMES: Record<string, string> = {
   VN: "Vietnam Airlines",
   QH: "Bamboo Airways",
   VU: "Vietravel Airlines",
+  BL: "Pacific Airlines",
+  "9G": "Pacific Airlines",
 };
 
 export function formatMoney(value: number) {

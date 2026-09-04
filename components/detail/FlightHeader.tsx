@@ -12,6 +12,28 @@ interface Props {
   onSelectDate: (date: Date) => void;
 }
 
+function formatJourney(
+  journey?: string,
+  startPoint?: string,
+  endPoint?: string,
+) {
+  const start = startPoint || "SGN";
+  const end = endPoint || "HAN";
+  const raw = (journey || `${start}${end}`).toUpperCase();
+  const match = raw.match(/^([A-Z]{3})([A-Z]{3})(\d{8})?$/);
+
+  if (!match) {
+    return `${start}/${end}`;
+  }
+
+  const [, from, to, date] = match;
+  const formattedDate = date
+    ? `${date.slice(0, 2)}/${date.slice(2, 4)}/${date.slice(4, 8)}`
+    : "";
+
+  return formattedDate ? `${from}/${to}/${formattedDate}` : `${from}/${to}`;
+}
+
 export const FlightHeader: React.FC<Props> = ({
   group,
   airOptionsCount,
@@ -35,7 +57,11 @@ export const FlightHeader: React.FC<Props> = ({
 
         <div className="flex justify-between items-center text-xs">
           <span>
-            Hành trình: <strong>{group?.Journey || "SGNHAN"}</strong> |{" "}
+            Hành trình:{" "}
+            <strong>
+              {formatJourney(group?.Journey, group?.StartPoint, group?.EndPoint)}
+            </strong>{" "}
+            |{" "}
             <strong>Hiển thị {airOptionsCount} chuyến bay</strong>
           </span>
 

@@ -2,7 +2,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-export type TicketReceiveClientStatus = "not_returned" | "returned";
+import {
+  normalizeTicketReceiveStatus,
+  type TicketReceiveStatus,
+} from "@/hook/useTicketReceives";
+
+export type TicketReceiveClientStatus = TicketReceiveStatus;
 
 export interface TicketReceiveClient {
   id: number;
@@ -67,7 +72,15 @@ async function fetchClientTicketReceives(
     throw new Error(data.message || "Không thể lấy lịch sử nhận vé");
   }
 
-  return data;
+  return {
+    ...data,
+    data: Array.isArray(data.data)
+      ? data.data.map((item: TicketReceiveClient) => ({
+          ...item,
+          status: normalizeTicketReceiveStatus(item.status),
+        }))
+      : [],
+  };
 }
 
 export function useClientTicketReceives(

@@ -9,6 +9,8 @@ import {
   useTicketReceives,
   TicketReceive,
   TicketReceiveStatus,
+  TICKET_RECEIVE_STATUS_OPTIONS,
+  ticketReceiveStatusLabel,
 } from "@/hook/useTicketReceives";
 
 // ============================================================
@@ -16,11 +18,20 @@ import {
 // ============================================================
 
 function StatusBadge({ status }: { status: TicketReceiveStatus }) {
-  if (status === "returned") {
+  if (status === "sent") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        Đã trả về
+        Đã gửi
+      </span>
+    );
+  }
+
+  if (status === "cancelled") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+        Đã hủy
       </span>
     );
   }
@@ -28,7 +39,7 @@ function StatusBadge({ status }: { status: TicketReceiveStatus }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
       <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-      Chưa trả
+      Chờ gửi
     </span>
   );
 }
@@ -49,7 +60,7 @@ const EMPTY_FORM: FormState = {
   email: "",
   phone: "",
   note: "",
-  status: "not_returned",
+  status: "pending",
   user_id: "",
 };
 
@@ -208,8 +219,11 @@ function EditModal({ token, item, onClose, onSaved }: EditModalProps) {
               onChange={set("status")}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
-              <option value="not_returned">Chưa trả</option>
-              <option value="returned">Đã trả về</option>
+              {TICKET_RECEIVE_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -263,8 +277,10 @@ function EditModal({ token, item, onClose, onSaved }: EditModalProps) {
 
 const STATUS_TABS = [
   { id: "all", label: "Tất cả" },
-  { id: "not_returned", label: "Chưa trả" },
-  { id: "returned", label: "Đã trả về" },
+  ...TICKET_RECEIVE_STATUS_OPTIONS.map((option) => ({
+    id: option.value,
+    label: option.label,
+  })),
 ];
 
 export default function TicketReceivesPage() {
@@ -372,10 +388,12 @@ export default function TicketReceivesPage() {
     deleteItem(id);
   };
 
-  const handleToggleStatus = (item: TicketReceive) => {
-    const newStatus: TicketReceiveStatus =
-      item.status === "not_returned" ? "returned" : "not_returned";
-    const label = newStatus === "returned" ? "đã trả về" : "chưa trả";
+  const handleStatusChange = (
+    item: TicketReceive,
+    newStatus: TicketReceiveStatus,
+  ) => {
+    if (newStatus === item.status) return;
+    const label = ticketReceiveStatusLabel(newStatus);
     if (!confirm(`Xác nhận đổi trạng thái sang "${label}"?`)) return;
     toggleStatus({ id: item.id, status: newStatus });
   };
@@ -528,15 +546,27 @@ export default function TicketReceivesPage() {
                       </td>
 
                       <td className="px-4 py-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(item)}
-                          disabled={isTogglingStatus || isDeleting}
-                          title="Nhấn để đổi trạng thái"
-                          className="cursor-pointer disabled:cursor-not-allowed"
-                        >
+                        <div className="inline-flex flex-col items-center gap-1.5">
                           <StatusBadge status={item.status} />
-                        </button>
+                          <select
+                            value={item.status}
+                            disabled={isTogglingStatus || isDeleting}
+                            onChange={(e) =>
+                              handleStatusChange(
+                                item,
+                                e.target.value as TicketReceiveStatus,
+                              )
+                            }
+                            title="Đổi trạng thái"
+                            className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] text-slate-600 focus:border-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {TICKET_RECEIVE_STATUS_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </td>
 
                       <td className="whitespace-nowrap px-4 py-3 text-slate-500">

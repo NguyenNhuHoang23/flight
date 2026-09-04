@@ -14,6 +14,9 @@ export interface RefundCommand {
 export interface CustomerGroup {
   userId: string;
   username: string;
+  balance: number;
+  availableBalance: number;
+  pendingTotal: number;
   commands: RefundCommand[];
 }
 

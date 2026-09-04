@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSelfRefundAvailability } from "@/lib/get-self-refund-availability";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -26,14 +27,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_URL}/api/admin/refunds`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: authorization,
+    const queryString = request.nextUrl.searchParams.toString();
+
+    const response = await fetch(
+      `${API_URL}/api/admin/refunds${queryString ? `?${queryString}` : ""}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: authorization,
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    });
+    );
 
     const data = await response.json();
 
@@ -80,6 +86,29 @@ export async function POST(request: NextRequest) {
 
     // Lấy body từ frontend
     const body = await request.json();
+    const requestedAmount = Number(body?.amount);
+    const isCreatingForAnotherUser = Number.isFinite(Number(body?.user_id));
+
+    if (
+      !isCreatingForAnotherUser &&
+      Number.isFinite(requestedAmount) &&
+      requestedAmount > 0
+    ) {
+      const availability = await getSelfRefundAvailability(
+        API_URL,
+        authorization,
+      );
+
+      if (availability && requestedAmount > availability.available) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Số dư không đủ để tạo yêu cầu rút tiền",
+          },
+          { status: 422 },
+        );
+      }
+    }
 
     // Call Laravel
     const response = await fetch(`${API_URL}/api/admin/refunds`, {

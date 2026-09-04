@@ -68,6 +68,7 @@ export const FlightList: React.FC<Props> = ({
       QH: "BAMBOO",
       VU: "VIETRAVEL",
       BL: "JETSTAR",
+      "9G": "JETSTAR",
     };
 
     const discountCode = airlineCodeMap[dataComCode] || dataComCode;

@@ -8,6 +8,7 @@ import CustomerTable from "@/components/admin/customer/CustomerTable";
 import CustomerModal from "@/components/admin/customer/CustomerModal";
 import { CustomerFormData } from "@/components/admin/customer/customer-types";
 import { Customer } from "@/components/admin/customer/customer-types";
+import { parseVndAmount } from "@/lib/refund-balance";
 
 const INITIAL_FORM: CustomerFormData = {
   username: "",
@@ -58,7 +59,7 @@ export default function CustomerManagementPage() {
     setFormData({
       username: customer.username,
       password: "",
-      balance: String(customer.balance ?? 0),
+      balance: String(parseVndAmount(customer.balance)),
     });
 
     setIsModalOpen(true);
@@ -96,7 +97,7 @@ export default function CustomerManagementPage() {
 
       const body: Record<string, unknown> = {
         username: formData.username,
-        balance: Number(formData.balance || 0),
+        balance: parseVndAmount(formData.balance),
       };
 
       // Tạo mới bắt buộc có password

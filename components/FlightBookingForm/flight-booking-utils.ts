@@ -1,4 +1,4 @@
-import { AIRLINE_INFO, parseTime } from "../detail/flight-utils";
+import { getAirlineMeta, parseTime } from "../detail/flight-utils";
 
 import { AirOptionAPI } from "../detail/flight-types";
 import { FlightSummary } from "./flight-booking-types";
@@ -19,12 +19,7 @@ export const getFlightSummary = (
 
   const airlineCode = airOption.Airline || "VN";
 
-  const airlineMeta = AIRLINE_INFO[
-    airlineCode as keyof typeof AIRLINE_INFO
-  ] || {
-    name: airlineCode,
-    image: "/images/airlines/default.png",
-  };
+  const airlineMeta = getAirlineMeta(airlineCode);
 
   const rawFlightNum =
     flightData?.FlightNumber || segmentData?.FlightNumber || "---";

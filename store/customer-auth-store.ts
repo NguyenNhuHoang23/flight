@@ -2,15 +2,17 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { parseVndAmount } from "@/lib/refund-balance";
 
 export interface CustomerUser {
   id: number;
+  username?: string;
   userName?: string;
   name?: string;
-  email: string;
+  email?: string;
   email_verified_at?: string | null;
   role: string;
-  balance: string | number;
+  balance: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -21,6 +23,7 @@ interface CustomerAuthState {
   hydrated: boolean;
 
   login: (user: CustomerUser, accessToken: string) => void;
+  updateUser: (user: Partial<CustomerUser>) => void;
   logout: () => void;
   setHydrated: (value: boolean) => void;
 }
@@ -33,9 +36,40 @@ export const useCustomerAuthStore = create<CustomerAuthState>()(
       hydrated: false,
 
       login: (user, accessToken) => {
+        const username = user.username || user.userName || user.name || "";
+
         set({
-          user,
+          user: {
+            ...user,
+            username,
+            userName: username,
+            balance: parseVndAmount(user.balance),
+          },
           accessToken,
+        });
+      },
+
+      updateUser: (user) => {
+        set((state) => {
+          if (!state.user) return state;
+
+          const username =
+            user.username ||
+            user.userName ||
+            user.name ||
+            state.user.username ||
+            state.user.userName ||
+            "";
+
+          return {
+            user: {
+              ...state.user,
+              ...user,
+              username,
+              userName: username,
+              balance: parseVndAmount(user.balance ?? state.user.balance),
+            },
+          };
         });
       },
 
@@ -59,6 +93,10 @@ export const useCustomerAuthStore = create<CustomerAuthState>()(
         return (state, error) => {
           if (error) {
             console.error("❌ Lỗi hydrate customer auth:", error);
+          }
+
+          if (state?.user) {
+            state.user.balance = parseVndAmount(state.user.balance);
           }
 
           state?.setHydrated(true);

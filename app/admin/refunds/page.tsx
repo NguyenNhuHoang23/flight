@@ -7,6 +7,11 @@ import { CustomerGroup, RefundCommand } from "@/components/refund/refund-types";
 
 import RefundCustomerGroup from "@/components/refund/RefundCustomerGroup";
 import { useRefunds } from "@/hook/useRefunds";
+import {
+  getAvailableRefundAmount,
+  getPendingRefundTotal,
+  parseVndAmount,
+} from "@/lib/refund-balance";
 import { useAuthStore } from "@/store/auth-store";
 
 const normalizeRefundTime = (value?: string | null) => {
@@ -298,10 +303,15 @@ const handleDelete = (commandId: string) => {
       const userId = String(refund.user_id);
 
       if (!groups.has(userId)) {
+        const balance = parseVndAmount(refund.user?.balance);
+
         groups.set(userId, {
           userId,
           username:
             refund.user?.userName || refund.user?.email || `User #${userId}`,
+          balance,
+          availableBalance: balance,
+          pendingTotal: 0,
           commands: [],
         });
       }
@@ -332,6 +342,14 @@ const handleDelete = (commandId: string) => {
       };
 
       group.commands.push(command);
+    });
+
+    groups.forEach((group) => {
+      group.pendingTotal = getPendingRefundTotal(group.commands);
+      group.availableBalance = getAvailableRefundAmount(
+        group.balance,
+        group.pendingTotal,
+      );
     });
 
     return Array.from(groups.values());
@@ -417,6 +435,22 @@ const handleDelete = (commandId: string) => {
    */
 
 const handleAddCommand = (commandId: string) => {
+  const sourceCommand = getMergedCommand(commandId);
+  const group = customerGroups.find((item) =>
+    item.commands.some((command) => command.id === commandId),
+  );
+
+  if (sourceCommand && group) {
+    const nextAmount = Number(sourceCommand.amount || 0);
+
+    if (nextAmount > group.availableBalance) {
+      alert(
+        `Không thể nhân bản vì vượt số dư còn lại. Có thể tạo tối đa ${new Intl.NumberFormat("vi-VN").format(group.availableBalance)} đ.`,
+      );
+      return;
+    }
+  }
+
   duplicateRefund(commandId, {
     onSuccess: () => {
       refetch();
@@ -443,6 +477,27 @@ const handleAddCommand = (commandId: string) => {
 
     if (!currentCommand) {
       return;
+    }
+
+    const group = customerGroups.find((item) =>
+      item.commands.some((command) => command.id === commandId),
+    );
+
+    if (currentCommand.status === "pending" && group) {
+      const otherPendingTotal = getPendingRefundTotal(
+        group.commands.filter((command) => command.id !== commandId),
+      );
+      const availableForThis = getAvailableRefundAmount(
+        group.balance,
+        otherPendingTotal,
+      );
+
+      if (Number(currentCommand.amount || 0) > availableForThis) {
+        alert(
+          `Số tiền vượt quá số dư còn lại. Có thể lưu tối đa ${new Intl.NumberFormat("vi-VN").format(availableForThis)} đ.`,
+        );
+        return;
+      }
     }
 
     updateRefund(

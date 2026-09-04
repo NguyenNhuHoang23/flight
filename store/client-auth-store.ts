@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { parseVndAmount } from "@/lib/refund-balance";
 
 interface ClientUser {
   id: number;
@@ -32,7 +33,10 @@ export const useClientAuthStore = create<ClientAuthState>()(
       setAuth: (accessToken, user) => {
         set({
           accessToken,
-          user,
+          user: {
+            ...user,
+            balance: parseVndAmount(user.balance),
+          },
         });
       },
 

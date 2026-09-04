@@ -272,6 +272,11 @@ export default function BookingLookupResult({
                 height={36}
                 className="h-7 w-auto object-contain sm:h-8"
               />
+              {airlineMeta.showName ? (
+                <p className="mt-1 text-center text-[10px] font-bold text-slate-800">
+                  {airlineMeta.name}
+                </p>
+              ) : null}
             </div>
 
             <div>

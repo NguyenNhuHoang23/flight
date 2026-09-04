@@ -52,10 +52,13 @@ export function useFlightSearch() {
     return () => window.removeEventListener("pageshow", handlePageShow);
   }, []);
 
-  // Helper tách mã IATA từ tên (ví dụ: "Hà Nội (HAN)" => "HAN")
+  // Helper tách mã IATA từ tên (ví dụ: "Hà Nội (HAN)" => "HAN", "Portland (Oregon) (PDX)" => "PDX")
   const extractAirportCode = (locationStr: string): string => {
-    const match = locationStr.match(/\(([^)]+)\)/);
-    return match ? match[1] : locationStr;
+    const iataMatches = [...locationStr.matchAll(/\(([A-Za-z0-9]{3})\)/g)];
+    if (iataMatches.length > 0) {
+      return iataMatches[iataMatches.length - 1][1].toUpperCase();
+    }
+    return locationStr.trim().toUpperCase();
   };
 
   // Helper chuyển đổi Date object sang định dạng DDMMYYYY
@@ -99,15 +102,16 @@ export function useFlightSearch() {
     }
 
     const payload = {
+      System: "",
       Adt: params.adt,
       Chd: params.chd,
       Inf: params.inf,
       Tourcode: "",
       ListRoute: listRoute,
       Option: {
-        DirectOnly: true,
-        NearByAirport: false,
-        PreferCabin: "economy",
+        DirectOnly: false,
+        NearByAirport: true,
+        PreferCabin: "ECONOMY",
         NdcOnly: false,
         CombineMode: "flight",
       },

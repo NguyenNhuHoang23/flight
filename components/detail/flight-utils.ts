@@ -1,6 +1,13 @@
 import { AirlineInfo } from "./flight-types";
 
-// 1. Ép kiểu Record<string, AirlineInfo> để tránh lỗi TypeScript khi truy cập dynamic key
+const PACIFIC_AIRLINES: AirlineInfo = {
+  name: "Pacific Airlines",
+  image: "/images/airlines/sun.jpg",
+  color: "text-orange-600",
+  bg: "bg-orange-50",
+  showName: true,
+};
+
 export const AIRLINE_INFO: Record<string, AirlineInfo> = {
   VN: {
     name: "Vietnam Airlines",
@@ -26,13 +33,8 @@ export const AIRLINE_INFO: Record<string, AirlineInfo> = {
     color: "text-[#ff6600]",
     bg: "bg-orange-50",
   },
-  "9G": {
-    // Thêm Pacific Airlines nếu hệ thống có trả về
-    name: "Pacific Airlines",
-    image: "/images/airlines/sun.jpg",
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-  },
+  BL: PACIFIC_AIRLINES,
+  "9G": PACIFIC_AIRLINES,
 };
 
 export function getAirlineMeta(
@@ -50,8 +52,12 @@ export function getAirlineMeta(
   if (name.includes("vietjet")) return AIRLINE_INFO.VJ;
   if (name.includes("bamboo")) return AIRLINE_INFO.QH;
   if (name.includes("vietravel")) return AIRLINE_INFO.VU;
-  if (name.includes("pacific") || name.includes("sun")) {
-    return AIRLINE_INFO["9G"];
+  if (
+    name.includes("pacific") ||
+    name.includes("sun") ||
+    name.includes("jetstar")
+  ) {
+    return PACIFIC_AIRLINES;
   }
 
   if (name.includes("vietnam")) return AIRLINE_INFO.VN;

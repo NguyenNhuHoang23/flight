@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSelfRefundAvailability } from "@/lib/get-self-refund-availability";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -27,6 +28,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const requestedAmount = Number(body?.amount);
+
+    if (Number.isFinite(requestedAmount) && requestedAmount > 0) {
+      const availability = await getSelfRefundAvailability(API_URL, token);
+
+      if (availability && requestedAmount > availability.available) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Số dư không đủ để tạo yêu cầu rút tiền",
+          },
+          { status: 422 },
+        );
+      }
+    }
 
     const response = await fetch(`${API_URL}/api/client/refund`, {
       method: "POST",

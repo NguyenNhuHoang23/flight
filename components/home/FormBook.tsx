@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   ArrowRightLeft,
   Calendar,
@@ -15,10 +15,17 @@ import { vi } from "date-fns/locale/vi";
 import "react-datepicker/dist/react-datepicker.css";
 import { useFlightSearch } from "@/hook/useFlightSearch";
 import { clearFlightSelection } from "@/components/detail/flight-selection-storage";
+import {
+  AIRPORT_COLUMNS,
+  AIRPORT_DATA,
+  ALL_AIRPORTS,
+  type AirportCategory,
+  type AirportItem,
+} from "@/data/airports";
 
 registerLocale("vi", vi);
 
-// Helper bỏ dấu tiếng Việt để tìm kiếm không dấu chuẩn xác
+
 const removeVietnameseTones = (str: string) => {
   return str
     .normalize("NFD")
@@ -28,139 +35,55 @@ const removeVietnameseTones = (str: string) => {
     .toLowerCase();
 };
 
-interface AirportItem {
-  id: string;
-  name: string;
+function airportMatchesQuery(airport: AirportItem, query: string) {
+  if (!query) return true;
+
+  const cleanQuery = removeVietnameseTones(query);
+  const haystack = removeVietnameseTones(
+    `${airport.name} ${airport.id} ${airport.country ?? ""} ${airport.keywords ?? ""}`,
+  );
+
+  if (haystack.includes(cleanQuery)) return true;
+  if (airport.id.toLowerCase().includes(cleanQuery)) return true;
+
+  const initials = removeVietnameseTones(airport.name)
+    .split(/[\s(),]+/)
+    .map((word) => word[0] ?? "")
+    .join("");
+
+  return initials.includes(cleanQuery);
 }
 
-interface AirportCategory {
-  title: string;
-  airports: AirportItem[];
+function isExcludedAirport(
+  airport: AirportItem,
+  activeSelectType: "origin" | "destination" | null,
+  fromLocation: string,
+  toLocation: string,
+) {
+  if (activeSelectType === "destination") return airport.name === fromLocation;
+  if (activeSelectType === "origin") return airport.name === toLocation;
+  return false;
 }
 
-const AIRPORT_DATA: AirportCategory[] = [
-  {
-    title: "MIỀN BẮC",
-    airports: [
-      { id: "HAN", name: "Hà Nội (HAN)" },
-      { id: "HPH", name: "Hải Phòng (HPH)" },
-      { id: "VDO", name: "Vân Đồn (VDO)" },
-      { id: "DIN", name: "Điện Biên (DIN)" },
-    ],
-  },
-  {
-    title: "MIỀN TRUNG",
-    airports: [
-      { id: "DAD", name: "Đà Nẵng (DAD)" },
-      { id: "THD", name: "Thanh Hóa (THD)" },
-      { id: "VII", name: "Vinh (VII)" },
-      { id: "HUI", name: "Huế (HUI)" },
-      { id: "VDH", name: "Đồng Hới (VDH)" },
-      { id: "VCL", name: "Chu Lai (VCL)" },
-    ],
-  },
-  {
-    title: "MIỀN NAM",
-    airports: [
-      { id: "SGN", name: "Hồ Chí Minh (SGN)" },
-      { id: "CXR", name: "Nha Trang (CXR)" },
-      { id: "PQC", name: "Phú Quốc (PQC)" },
-      { id: "VCA", name: "Cần Thơ (VCA)" },
-      { id: "DLI", name: "Đà Lạt (DLI)" },
-      { id: "UIH", name: "Qui Nhơn (UIH)" },
-      { id: "TBB", name: "Tuy Hòa (TBB)" },
-      { id: "BMV", name: "Buôn Ma Thuột (BMV)" },
-      { id: "PXU", name: "Pleiku (PXU)" },
-      { id: "VCS", name: "Côn Đảo (VCS)" },
-      { id: "VKG", name: "Rạch Giá (VKG)" },
-      { id: "CAH", name: "Cà Mau (CAH)" },
-      { id: "LTH", name: "Long Thành (LTH)" },
-    ],
-  },
-  {
-    title: "ĐÔNG NAM Á + ÚC",
-    airports: [
-      { id: "BKK", name: "Bangkok (BKK)" },
-      { id: "HKT", name: "Phuket (HKT)" },
-      { id: "CNX", name: "Chiang Mai (CNX)" },
-      { id: "SIN", name: "Singapore (SIN)" },
-      { id: "KUL", name: "Kuala Lumpur (KUL)" },
-      { id: "VTE", name: "Vientiane (VTE)" },
-      { id: "PNH", name: "Phnom Penh (PNH)" },
-      { id: "REP", name: "Siem Reap (REP)" },
-      { id: "JKT", name: "Jakarta (JKT)" },
-      { id: "DPS", name: "Denpasar Bali (DPS)" },
-      { id: "RGN", name: "Yangon (RGN)" },
-      { id: "MNL", name: "Manila (MNL)" },
-    ],
-  },
-  {
-    title: "CHÂU ÚC",
-    airports: [
-      { id: "SYD", name: "Sydney (SYD)" },
-      { id: "MEL", name: "Melbourne (MEL)" },
-    ],
-  },
-  {
-    title: "ĐÔNG BẮC Á",
-    airports: [
-      { id: "NRT", name: "Tokyo Narita (NRT)" },
-      { id: "KIX", name: "Osaka (KIX)" },
-      { id: "ICN", name: "Seoul Incheon(ICN)" },
-      { id: "PUS", name: "Busan (PUS)" },
-      { id: "CAN", name: "Quảng Châu (CAN)" },
-      { id: "PVG", name: "Thượng Hải (PVG)" },
-      { id: "PEK", name: "Bắc Kinh (PEK)" },
-      { id: "SZX", name: "Thâm Quyến (SZX)" },
-      { id: "CTU", name: "Thành Đô (CTU)" },
-      { id: "HGH", name: "Hàng Châu (HGH)" },
-      { id: "TPE", name: "Đài Bắc (TPE)" },
-      { id: "KHH", name: "Cao Hùng (KHH)" },
-      { id: "HKG", name: "Hong Kong (HKG)" },
-      { id: "DEL", name: "New Delhi (DEL)" },
-      { id: "BOM", name: "Mumbai (BOM)" },
-    ],
-  },
-  {
-    title: "CHÂU ÂU",
-    airports: [
-      { id: "CDG", name: "Paris (CDG)" },
-      { id: "FRA", name: "Frankfurt (FRA)" },
-      { id: "BER", name: "Berlin (BER)" },
-      { id: "LHR", name: "London (LHR)" },
-      { id: "SVO", name: "Moscow (SVO)" },
-      { id: "AMS", name: "Amsterdam (AMS)" },
-      { id: "ROM", name: "Rome (ROM)" },
-      { id: "MXP", name: "Milan (MXP)" },
-      { id: "GVA", name: "Geneva (GVA)" },
-      { id: "MAD", name: "Madrid (MAD)" },
-      { id: "BCN", name: "Barcelona (BCN)" },
-      { id: "ARN", name: "Stockholm (ARN)" },
-      { id: "CPH", name: "Copenhagen (CPH)" },
-      { id: "HEL", name: "Helsinki (HEL)" },
-      { id: "VIE", name: "Vienna (VIE)" },
-    ],
-  },
-  {
-    title: "CHÂU MỸ",
-    airports: [
-      { id: "LAX", name: "Los Angeles (LAX)" },
-      { id: "SFO", name: "San Francisco (SFO)" },
-      { id: "DFW", name: "Dallas Fort Worth (DFW)" },
-      { id: "BOS", name: "Boston, Logan (BOS)" },
-      { id: "SEA", name: "Seattle, Tacoma (SEA)" },
-      { id: "JFK", name: "New York (JFK)" },
-      { id: "ORD", name: "Chicago (ORD)" },
-      { id: "IAD", name: "Washington (IAD)" },
-      { id: "SAN", name: "San Diego (SAN)" },
-      { id: "MIA", name: "Miami (MIA)" },
-      { id: "HNL", name: "Honolulu (HNL)" },
-      { id: "YYZ", name: "Toronto (YYZ)" },
-      { id: "YVR", name: "Vancouver (YVR)" },
-      { id: "YMQ", name: "Montreal (YMQ)" },
-    ],
-  },
-];
+function groupAirportsByCountry(airports: AirportItem[]): AirportCategory[] {
+  const groups = new Map<string, AirportItem[]>();
+
+  for (const airport of airports) {
+    const country = airport.country?.trim() || "Khác";
+    const list = groups.get(country);
+    if (list) list.push(airport);
+    else groups.set(country, [airport]);
+  }
+
+  return [...groups.entries()]
+    .sort(([a], [b]) => {
+      if (a === "Việt Nam") return -1;
+      if (b === "Việt Nam") return 1;
+      return a.localeCompare(b, "vi");
+    })
+    .map(([title, grouped]) => ({ title, airports: grouped }));
+}
+
 
 export default function FormBook() {
   const [fromLocation, setFromLocation] = useState("Hồ Chí Minh (SGN)");
@@ -269,36 +192,26 @@ export default function FormBook() {
     window.location.assign(`/flight/search/${sessionId}`);
   };
 
-  // Logic lọc airport nâng cao
-  const filteredAirportData = AIRPORT_DATA.map((cat) => ({
-    ...cat,
-    airports: cat.airports.filter((ap) => {
-      const isExcluded =
-        activeSelectType === "destination"
-          ? ap.name === fromLocation
-          : activeSelectType === "origin"
-            ? ap.name === toLocation
-            : false;
+  const query = searchQuery.trim();
 
-      if (isExcluded) return false;
-      if (!searchQuery.trim()) return true;
+  const filteredAirportData = useMemo(() => {
+    const exclude = (airport: AirportItem) =>
+      isExcludedAirport(airport, activeSelectType, fromLocation, toLocation);
 
-      const cleanQuery = removeVietnameseTones(searchQuery.trim());
-      const cleanName = removeVietnameseTones(ap.name);
-      const cleanId = ap.id.toLowerCase();
+    if (!query) {
+      return AIRPORT_DATA.map((cat) => ({
+        ...cat,
+        airports: cat.airports.filter((airport) => !exclude(airport)),
+      })).filter((cat) => cat.airports.length > 0);
+    }
 
-      const matchesId = cleanId.includes(cleanQuery);
-      const matchesName = cleanName.includes(cleanQuery);
-
-      const initials = cleanName
-        .split(/[\s(),]+/)
-        .map((word) => word[0])
-        .join("");
-      const matchesInitials = initials.includes(cleanQuery);
-
-      return matchesId || matchesName || matchesInitials;
-    }),
-  })).filter((cat) => cat.airports.length > 0);
+    return groupAirportsByCountry(
+      ALL_AIRPORTS.filter(
+        (airport) =>
+          !exclude(airport) && airportMatchesQuery(airport, query),
+      ),
+    );
+  }, [activeSelectType, fromLocation, toLocation, query]);
 
   return (
     <div className="lg:col-span-7 bg-[#e9ecef] p-4 rounded-xl border border-slate-300 shadow-xs relative font-sans">
@@ -420,7 +333,7 @@ export default function FormBook() {
               </div>
 
               {/* Airport Grid Content */}
-              <div className="p-4 max-h-[70vh] md:max-h-[420px] overflow-y-auto bg-white">
+              <div className="p-4 max-h-[70vh] md:max-h-[520px] overflow-y-auto bg-white">
                 {filteredAirportData.length === 0 ? (
                   <div className="text-center py-8 text-slate-500 text-xs">
                     Không tìm thấy sân bay phù hợp với "{searchQuery}"
@@ -448,175 +361,35 @@ export default function FormBook() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-4 gap-y-4 text-[11px] leading-relaxed text-slate-600">
-                    {/* Cột 1: Bắc + Trung */}
-                    <div className="space-y-3">
-                      {AIRPORT_DATA.find((c) => c.title === "MIỀN BẮC") && (
-                        <div>
-                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                            MIỀN BẮC
-                          </h4>
-                          <ul className="space-y-1">
-                            {AIRPORT_DATA.find(
-                              (c) => c.title === "MIỀN BẮC",
-                            )?.airports.map((ap) => (
-                              <li
-                                key={ap.id}
-                                onClick={() => handleSelectAirport(ap.name)}
-                                className="hover:text-[#006838] cursor-pointer"
-                              >
-                                {ap.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {AIRPORT_DATA.find((c) => c.title === "MIỀN TRUNG") && (
-                        <div>
-                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                            MIỀN TRUNG
-                          </h4>
-                          <ul className="space-y-1">
-                            {AIRPORT_DATA.find(
-                              (c) => c.title === "MIỀN TRUNG",
-                            )?.airports.map((ap) => (
-                              <li
-                                key={ap.id}
-                                onClick={() => handleSelectAirport(ap.name)}
-                                className="hover:text-[#006838] cursor-pointer"
-                              >
-                                {ap.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    {AIRPORT_COLUMNS.map((columnTitles) => (
+                      <div key={columnTitles.join("-")} className="space-y-3">
+                        {columnTitles.map((title) => {
+                          const category = filteredAirportData.find(
+                            (c) => c.title === title,
+                          );
+                          if (!category) return null;
 
-                    {/* Cột 2: Nam */}
-                    <div>
-                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                        MIỀN NAM
-                      </h4>
-                      <ul className="space-y-1">
-                        {AIRPORT_DATA.find(
-                          (c) => c.title === "MIỀN NAM",
-                        )?.airports.map((ap) => (
-                          <li
-                            key={ap.id}
-                            onClick={() => handleSelectAirport(ap.name)}
-                            className="hover:text-[#006838] cursor-pointer"
-                          >
-                            {ap.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Cột 3: ĐNÁ + Úc */}
-                    <div className="space-y-3">
-                      {AIRPORT_DATA.find(
-                        (c) => c.title === "ĐÔNG NAM Á + ÚC",
-                      ) && (
-                        <div>
-                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                            ĐÔNG NAM Á + ÚC
-                          </h4>
-                          <ul className="space-y-1">
-                            {AIRPORT_DATA.find(
-                              (c) => c.title === "ĐÔNG NAM Á + ÚC",
-                            )?.airports.map((ap) => (
-                              <li
-                                key={ap.id}
-                                onClick={() => handleSelectAirport(ap.name)}
-                                className="hover:text-[#006838] cursor-pointer"
-                              >
-                                {ap.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {AIRPORT_DATA.find((c) => c.title === "CHÂU ÚC") && (
-                        <div>
-                          <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                            CHÂU ÚC
-                          </h4>
-                          <ul className="space-y-1">
-                            {AIRPORT_DATA.find(
-                              (c) => c.title === "CHÂU ÚC",
-                            )?.airports.map((ap) => (
-                              <li
-                                key={ap.id}
-                                onClick={() => handleSelectAirport(ap.name)}
-                                className="hover:text-[#006838] cursor-pointer"
-                              >
-                                {ap.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Cột 4: Đông Bắc Á */}
-                    <div>
-                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                        ĐÔNG BẮC Á
-                      </h4>
-                      <ul className="space-y-1">
-                        {AIRPORT_DATA.find(
-                          (c) => c.title === "ĐÔNG BẮC Á",
-                        )?.airports.map((ap) => (
-                          <li
-                            key={ap.id}
-                            onClick={() => handleSelectAirport(ap.name)}
-                            className="hover:text-[#006838] cursor-pointer"
-                          >
-                            {ap.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Cột 5: Châu Âu */}
-                    <div>
-                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                        CHÂU ÂU
-                      </h4>
-                      <ul className="space-y-1">
-                        {AIRPORT_DATA.find(
-                          (c) => c.title === "CHÂU ÂU",
-                        )?.airports.map((ap) => (
-                          <li
-                            key={ap.id}
-                            onClick={() => handleSelectAirport(ap.name)}
-                            className="hover:text-[#006838] cursor-pointer"
-                          >
-                            {ap.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Cột 6: Châu Mỹ */}
-                    <div>
-                      <h4 className="text-[#d84315] font-bold uppercase mb-1">
-                        CHÂU MỸ
-                      </h4>
-                      <ul className="space-y-1">
-                        {AIRPORT_DATA.find(
-                          (c) => c.title === "CHÂU MỸ",
-                        )?.airports.map((ap) => (
-                          <li
-                            key={ap.id}
-                            onClick={() => handleSelectAirport(ap.name)}
-                            className="hover:text-[#006838] cursor-pointer"
-                          >
-                            {ap.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                          return (
+                            <div key={title}>
+                              <h4 className="text-[#d84315] font-bold uppercase mb-1">
+                                {category.title}
+                              </h4>
+                              <ul className="space-y-1">
+                                {category.airports.map((ap) => (
+                                  <li
+                                    key={ap.id}
+                                    onClick={() => handleSelectAirport(ap.name)}
+                                    className="hover:text-[#006838] cursor-pointer"
+                                  >
+                                    {ap.name}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

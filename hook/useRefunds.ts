@@ -27,6 +27,7 @@ export interface Refund {
     id: number;
     userName: string;
     email: string;
+    balance?: number | string | null;
   };
 }
 export interface RefundPagination {

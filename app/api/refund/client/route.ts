@@ -26,14 +26,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_URL}/api/refund/client`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: authorization,
+    const queryString = request.nextUrl.searchParams.toString();
+
+    const response = await fetch(
+      `${API_URL}/api/refund/client${queryString ? `?${queryString}` : ""}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: authorization,
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    });
+    );
 
     const data = await response.json();
 

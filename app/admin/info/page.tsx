@@ -356,11 +356,11 @@ export default function AdminSettingsPage() {
                 </label>
                 <div className="relative">
                   <input
-                    type="url"
+                    type="text"
                     name="zalo"
                     value={config.zalo}
                     onChange={handleChange}
-                    placeholder="https://zalo.me/..."
+                    placeholder="{qr}https://zalo.me/... hoặc {link}https://zalo.me/..."
                     className="w-full pl-3 pr-16 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
                   />
                   <button
@@ -371,6 +371,9 @@ export default function AdminSettingsPage() {
                     {copiedField === "zalo" ? "✓ Đã chép" : "Copy"}
                   </button>
                 </div>
+                <p className="mt-1.5 text-[11px] text-slate-500">
+                  {`{qr}`}url: bấm Zalo hiện popup QR. {`{link}`}url: mở link tab mới.
+                </p>
               </div>
 
               {/* Messenger */}
